@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Welcome, {{ user.username }}!</h2>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Total Tasks Assigned</h5>
+                    <h2 class="mb-0">{{ total_assigned }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Tasks Completed</h5>
+                    <h2 class="mb-0">{{ total_completed }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Completion Rate</h5>
+                    <h2 class="mb-0">{{ completion_rate }}%</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Groups Joined</h5>
+                    <h2 class="mb-0">{{ groups_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Pending Tasks -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Pending Tasks</h5>
+                </div>
+                <div class="card-body">
+                    {% if assigned_tasks %}
+                        {% for task in assigned_tasks %}
+                        <div class="task-card card mb-2">
+                            <div class="card-body">
+                                <h6>{{ task.title }}</h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> Due: {{ task.deadline|date:"M d, Y" }}
+                                </small>
+                                <span class="status-badge status-{{ task.status }} float-end">
+                                    {{ task.get_status_display }}
+                                </span>
+                                <div class="mt-2">
+                                    <a href="{% url 'core:task_detail' task.id %}" class="btn btn-sm btn-outline-primary">View Task</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No pending tasks. Great job!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activities -->
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Activities</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if recent_activities %}
+                        {% for activity in recent_activities %}
+                        <div class="mb-2 pb-2 border-bottom">
+                            <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                            <p class="mb-0">{{ activity.description }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No recent activities.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Navigation & About Section -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-compass"></i> Quick Navigation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{% url 'core:group_list' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-users"></i> 📁 View My Groups
+                        </a>
+                        <a href="{% url 'core:group_create' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-plus"></i> ➕ Create New Group
+                        </a>
+                        <a href="{% url 'core:join_group' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-sign-in-alt"></i> 🔗 Join Existing Group
+                        </a>
+                        <a href="{% url 'core:my_tasks' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-tasks"></i> ✅ My Tasks
+                        </a>
+                        <a href="{% url 'core:activity_log' %}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-history"></i> 📝 Activity Log
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> About TaskTrack</h5>
+                </div>
+                <div class="card-body">
+                    <p>TaskTrack helps students manage group projects with:</p>
+                    <ul>
+                        <li><i class="fas fa-check-circle text-success"></i> Task assignment and tracking</li>
+                        <li><i class="fas fa-chart-line text-primary"></i> Contribution monitoring</li>
+                        <li><i class="fas fa-calendar-alt text-warning"></i> Deadline management</li>
+                        <li><i class="fas fa-clipboard-list text-info"></i> Activity logging for transparency</li>
+                    </ul>
+                    <hr>
+                    <small class="text-muted">
+                        <i class="fas fa-gavel"></i> Focus: Accountability & Organization
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- My Groups Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> My Groups</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_groups %}
+                        <div class="row">
+                            {% for group in user_groups %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5>{{ group.name }}</h5>
+                                        <p class="text-muted small">{{ group.description|truncatewords:20|default:"No description" }}</p>
+                                        {% with total=group.get_total_tasks_count completed=group.get_completed_tasks_count %}
+                                        <div class="contribution-bar mb-2">
+                                            <div class="contribution-fill" data-width="{% if total > 0 %}{% widthratio completed total 100 %}{% else %}0{% endif %}"></div>
+                                        </div>
+                                        <small>Progress: {{ completed }}/{{ total }} tasks</small>
+                                        {% endwith %}
+                                        <a href="{% url 'core:group_detail' group.id %}" class="btn btn-sm btn-primary mt-2 w-100">View Group</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">
+                            You haven't joined any groups yet. 
+                            <a href="{% url 'core:group_create' %}">Create a group</a> or 
+                            <a href="{% url 'core:join_group' %}">join an existing one</a>.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .task-card {
+        transition: transform 0.2s;
+    }
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    .status-PENDING { background-color: #ffc107; color: #000; }
+    .status-IN_PROGRESS { background-color: #17a2b8; color: #fff; }
+    .status-COMPLETED { background-color: #28a745; color: #fff; }
+    .status-OVERDUE { background-color: #dc3545; color: #fff; }
+    .contribution-bar {
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .contribution-fill {
+        height: 100%;
+        background-color: #28a745;
+        transition: width 0.3s;
+    }
+</style>
+
+<script>
+  document.querySelectorAll('.contribution-fill[data-width]').forEach(function(el) {
+    el.style.width = el.getAttribute('data-width') + '%';
+  });
+</script>
+
+{% endblock %}

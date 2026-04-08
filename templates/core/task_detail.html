@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ task.title }}</h4>
+                        <span class="status-badge status-{{ task.status }}">
+                            {{ task.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h6>Description</h6>
+                    <p>{{ task.description|default:"No description provided" }}</p>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-user"></i> Assigned To:</strong> {{ task.assigned_to.username }}</p>
+                            <p><strong><i class="fas fa-calendar"></i> Deadline:</strong> {{ task.deadline|date:"F d, Y H:i" }}</p>
+                            {% if task.completed_at %}
+                            <p><strong><i class="fas fa-check-circle text-success"></i> Completed:</strong> {{ task.completed_at|date:"F d, Y H:i" }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong><i class="fas fa-user-friends"></i> Group:</strong> {{ task.group.name }}</p>
+                            <p><strong><i class="fas fa-user"></i> Created By:</strong> {{ task.created_by.username }}</p>
+                            <p><strong><i class="fas fa-clock"></i> Created:</strong> {{ task.created_at|date:"F d, Y" }}</p>
+                        </div>
+                    </div>
+                    
+                    {% if task.file_link %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-link"></i> <strong>Task Output Link:</strong>
+                        <a href="{{ task.file_link }}" target="_blank">{{ task.file_link }}</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-sync-alt"></i> Update Task Status</h5>
+                </div>
+                <div class="card-body">
+                    {% if can_update_status %}
+                        <form method="post" action="{% url 'core:update_task_status' task.id %}">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="status" class="form-label">Change Status</label>
+                                    <select name="status" id="status" class="form-control">
+                                        <option value="PENDING" {% if task.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                                        <option value="IN_PROGRESS" {% if task.status == 'IN_PROGRESS' %}selected{% endif %}>In Progress</option>
+                                        <option value="COMPLETED" {% if task.status == 'COMPLETED' %}selected{% endif %}>Completed</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="file_link" class="form-label">File Link (Optional)</label>
+                                    <input type="url" name="file_link" id="file_link" class="form-control" value="{{ task.file_link }}" placeholder="https://...">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label for="rollback_comment" class="form-label">
+                                    Rollback Comment (required when moving from Completed to Pending/In Progress)
+                                </label>
+                                <textarea name="rollback_comment" id="rollback_comment" class="form-control" rows="2" placeholder="Add reason for status rollback"></textarea>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success">Update Status</button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <p class="text-muted mb-0">Only the group leader or assigned member can update this task status.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Task Progress</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <div class="progress mb-3" style="height: 30px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 data-width="{% if task.status == 'COMPLETED' %}100{% elif task.status == 'IN_PROGRESS' %}50{% else %}0{% endif %}"
+                                 aria-valuenow="{% if task.status == 'COMPLETED' %}100{% elif task.status == 'IN_PROGRESS' %}50{% else %}0{% endif %}" 
+                                 aria-valuemin="0" aria-valuemax="100">
+                                {% if task.status == 'COMPLETED' %}Complete{% elif task.status == 'IN_PROGRESS' %}In Progress{% else %}Not Started{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {% if can_edit_task %}
+                            <a href="{% url 'core:task_edit' task.id %}" class="btn btn-warning w-100">
+                                <i class="fas fa-pen"></i> Edit Task
+                            </a>
+                        {% endif %}
+                        {% if can_delete_task %}
+                            <form method="post" action="{% url 'core:task_delete' task.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger w-100" onclick="return confirm('Delete this task?')">
+                                    <i class="fas fa-trash"></i> Delete Task
+                                </button>
+                            </form>
+                        {% endif %}
+                        <a href="{% url 'core:group_detail' task.group.id %}" class="btn btn-primary">
+                            <i class="fas fa-users"></i> Back to Group
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Task Activity</h5>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    {% if task_activities %}
+                        {% for activity in task_activities %}
+                        <div class="mb-2 pb-2 border-bottom">
+                            <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                            <p class="mb-0 small">{{ activity.description }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted text-center">No activity recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    .status-PENDING { background-color: #ffc107; color: #000; }
+    .status-IN_PROGRESS { background-color: #17a2b8; color: #fff; }
+    .status-COMPLETED { background-color: #28a745; color: #fff; }
+    .status-OVERDUE { background-color: #dc3545; color: #fff; }
+    .progress {
+        border-radius: 10px;
+    }
+    .progress-bar {
+        font-weight: bold;
+        line-height: 30px;
+    }
+</style>
+
+{% endblock %}

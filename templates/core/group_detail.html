@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3>{{ group.name }}</h3>
+        </div>
+        <div class="card-body">
+            <p>{{ group.description|default:"No description provided" }}</p>
+            <p><strong>Created by:</strong> {{ group.created_by.username }}</p>
+            <p><strong>Join code:</strong> <code>{{ group.join_code }}</code></p>
+            <p><strong>Members:</strong> {{ group.members.count }}</p>
+            <p><strong>Created:</strong> {{ group.created_at|date:"F d, Y" }}</p>
+        </div>
+    </div>
+    
+    <div class="mb-3">
+        {% if is_group_leader %}
+            <a href="{% url 'core:task_create' group.id %}" class="btn btn-success">Add Task</a>
+            <form method="post" action="{% url 'core:group_delete' group.id %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this group and all its tasks?')">
+                    Delete Group
+                </button>
+            </form>
+        {% endif %}
+        <a href="{% url 'core:group_list' %}" class="btn btn-secondary">Back to Groups</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h4>Tasks</h4>
+        </div>
+        <div class="card-body">
+            {% if tasks %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Assigned To</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks %}
+                            <tr>
+                                <td>{{ task.title }}</td>
+                                <td>{{ task.assigned_to.username }}</td>
+                                <td>{{ task.deadline|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge bg-{% if task.status == 'COMPLETED' %}success{% elif task.status == 'IN_PROGRESS' %}info{% elif task.status == 'OVERDUE' %}danger{% else %}warning{% endif %}">
+                                        {{ task.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'core:task_detail' task.id %}" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                {% if is_group_leader %}
+                    <p>No tasks yet. <a href="{% url 'core:task_create' group.id %}">Create the first task!</a></p>
+                {% else %}
+                    <p>No tasks yet.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if member_contributions %}
+    <div class="card mt-4">
+        <div class="card-header bg-secondary text-white">
+            <h4>Member Contributions</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Tasks Assigned</th>
+                            <th>Tasks Completed</th>
+                            <th>Completion Rate</th>
+                            {% if is_group_leader %}
+                                <th>Manage</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for member in member_contributions %}
+                        <tr>
+                            <td>{{ member.user.username }}</td>
+                            <td>{{ member.assigned }}</td>
+                            <td>{{ member.completed }}</td>
+                            <td>{{ member.completion_rate|floatformat:1 }}%</td>
+                            {% if is_group_leader %}
+                                <td>
+                                    {% if member.user.id != group.created_by.id %}
+                                        <form method="post" action="{% url 'core:remove_group_member' group.id member.user.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .badge {
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 12px;
+    }
+    .bg-warning {
+        background-color: #ffc107;
+        color: #000;
+    }
+    .bg-info {
+        background-color: #17a2b8;
+        color: #fff;
+    }
+    .bg-success {
+        background-color: #28a745;
+        color: #fff;
+    }
+    .bg-danger {
+        background-color: #dc3545;
+        color: #fff;
+    }
+</style>
+{% endblock %}
