@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container-fluid">
     <h2 class="mb-4">Welcome, {{ user.username }}!</h2>
-    
+
     <!-- Stats Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -40,7 +40,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="row">
         <!-- Pending Tasks -->
         <div class="col-md-6">
@@ -72,7 +72,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Recent Activities -->
         <div class="col-md-6">
             <div class="card shadow">
@@ -94,8 +94,8 @@
             </div>
         </div>
     </div>
-    
-    <!-- Quick Navigation & About Section -->
+
+    <!-- Bottom Section: Quick Navigation & About -->
     <div class="row mt-4">
         <div class="col-md-6">
             <div class="card shadow">
@@ -105,25 +105,25 @@
                 <div class="card-body">
                     <div class="list-group">
                         <a href="{% url 'core:group_list' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-users"></i> 📁 View My Groups
+                            <i class="fas fa-users"></i> View My Groups
                         </a>
                         <a href="{% url 'core:group_create' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-plus"></i> ➕ Create New Group
+                            <i class="fas fa-plus"></i> Create New Group
                         </a>
                         <a href="{% url 'core:join_group' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-sign-in-alt"></i> 🔗 Join Existing Group
+                            <i class="fas fa-sign-in-alt"></i> Join Existing Group
                         </a>
                         <a href="{% url 'core:my_tasks' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-tasks"></i> ✅ My Tasks
+                            <i class="fas fa-tasks"></i> My Tasks
                         </a>
                         <a href="{% url 'core:activity_log' %}" class="list-group-item list-group-item-action">
-                            <i class="fas fa-history"></i> 📝 Activity Log
+                            <i class="fas fa-history"></i> Activity Log
                         </a>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-6">
             <div class="card shadow">
                 <div class="card-header bg-info text-white">
@@ -139,48 +139,8 @@
                     </ul>
                     <hr>
                     <small class="text-muted">
-                        <i class="fas fa-gavel"></i> Focus: Accountability & Organization
+                        <i class="fas fa-gavel"></i> Focus: Accountability and Organization
                     </small>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- My Groups Section -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-users"></i> My Groups</h5>
-                </div>
-                <div class="card-body">
-                    {% if user_groups %}
-                        <div class="row">
-                            {% for group in user_groups %}
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body">
-                                        <h5>{{ group.name }}</h5>
-                                        <p class="text-muted small">{{ group.description|truncatewords:20|default:"No description" }}</p>
-                                        {% with total=group.get_total_tasks_count completed=group.get_completed_tasks_count %}
-                                        <div class="contribution-bar mb-2">
-                                            <div class="contribution-fill" data-width="{% if total > 0 %}{% widthratio completed total 100 %}{% else %}0{% endif %}"></div>
-                                        </div>
-                                        <small>Progress: {{ completed }}/{{ total }} tasks</small>
-                                        {% endwith %}
-                                        <a href="{% url 'core:group_detail' group.id %}" class="btn btn-sm btn-primary mt-2 w-100">View Group</a>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted text-center">
-                            You haven't joined any groups yet. 
-                            <a href="{% url 'core:group_create' %}">Create a group</a> or 
-                            <a href="{% url 'core:join_group' %}">join an existing one</a>.
-                        </p>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -191,36 +151,21 @@
     .task-card {
         transition: transform 0.2s;
     }
+
     .task-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
+
     .status-badge {
         padding: 5px 10px;
         border-radius: 20px;
         font-size: 0.75rem;
     }
+
     .status-PENDING { background-color: #ffc107; color: #000; }
     .status-IN_PROGRESS { background-color: #17a2b8; color: #fff; }
     .status-COMPLETED { background-color: #28a745; color: #fff; }
     .status-OVERDUE { background-color: #dc3545; color: #fff; }
-    .contribution-bar {
-        height: 8px;
-        background-color: #e9ecef;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-    .contribution-fill {
-        height: 100%;
-        background-color: #28a745;
-        transition: width 0.3s;
-    }
 </style>
-
-<script>
-  document.querySelectorAll('.contribution-fill[data-width]').forEach(function(el) {
-    el.style.width = el.getAttribute('data-width') + '%';
-  });
-</script>
-
 {% endblock %}
