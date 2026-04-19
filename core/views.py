@@ -137,6 +137,7 @@ def group_detail(request, group_id):
         return redirect('core:group_list')
 
     tasks = group.tasks.all()
+    group_activities = group.activities.select_related('user', 'task')[:50]
     total_tasks = tasks.count()
     completed_tasks = tasks.filter(status='COMPLETED').count()
     is_group_leader = _is_group_leader(request.user, group)
@@ -145,6 +146,7 @@ def group_detail(request, group_id):
     context = {
         'group': group,
         'tasks': tasks,
+        'group_activities': group_activities,
         'member_contributions': contribution_data['member_contributions'],
         'total_group_activities': contribution_data['total_group_activities'],
         'total_completed_member_tasks': contribution_data['total_completed_tasks'],

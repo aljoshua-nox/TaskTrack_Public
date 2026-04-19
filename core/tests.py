@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from .models import ActivityLog, Group, Task
 
@@ -75,6 +76,35 @@ class CoreViewTests(TestCase):
         response = self.client.get(reverse('core:group_detail', args=[self.group.id]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['group'], self.group)
+
+    def test_group_detail_includes_group_activity_history(self):
+        older = ActivityLog.objects.create(
+            user=self.owner,
+            group=self.group,
+            action='GROUP_CREATED',
+            description='older entry',
+        )
+        newer = ActivityLog.objects.create(
+            user=self.member,
+            group=self.group,
+            task=self.task,
+            action='TASK_UPDATED',
+            description='newer entry',
+        )
+
+        # Ensure deterministic ordering for this test.
+        older_ts = timezone.make_aware(parse_datetime('2026-01-01T00:00:00'))
+        newer_ts = timezone.make_aware(parse_datetime('2026-01-01T01:00:00'))
+        ActivityLog.objects.filter(id=older.id).update(timestamp=older_ts)
+        ActivityLog.objects.filter(id=newer.id).update(timestamp=newer_ts)
+
+        self.client.login(username='owner', password='pass12345')
+        response = self.client.get(reverse('core:group_detail', args=[self.group.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('group_activities', response.context)
+        activity_descriptions = [entry.description for entry in response.context['group_activities']]
+        self.assertEqual(activity_descriptions[0], 'newer entry')
+        self.assertEqual(activity_descriptions[1], 'older entry')
 
     def test_group_detail_contribution_tracker_uses_completed_and_activity_shares(self):
         self.task.status = 'COMPLETED'
