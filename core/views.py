@@ -1,4 +1,5 @@
 import logging
+from django.db.models import Count, Q
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -19,6 +20,49 @@ def _is_group_member(user, group):
 
 def _is_group_leader(user, group):
     return group.created_by_id == user.id
+
+
+def _build_member_contributions(group):
+    total_completed_tasks = group.tasks.filter(status='COMPLETED').count()
+    total_group_activities = group.activities.count()
+
+    members = group.members.annotate(
+        assigned_tasks_count=Count('assigned_tasks', filter=Q(assigned_tasks__group=group), distinct=True),
+        completed_tasks_count=Count(
+            'assigned_tasks',
+            filter=Q(assigned_tasks__group=group, assigned_tasks__status='COMPLETED'),
+            distinct=True,
+        ),
+        activity_count=Count('activities', filter=Q(activities__group=group), distinct=True),
+    ).order_by('username')
+
+    contributions = []
+    for member in members:
+        assigned = member.assigned_tasks_count
+        completed = member.completed_tasks_count
+        activity_count = member.activity_count
+        completion_rate = (completed / assigned * 100) if assigned > 0 else 0
+        contribution_share = (completed / total_completed_tasks * 100) if total_completed_tasks > 0 else 0
+        activity_share = (activity_count / total_group_activities * 100) if total_group_activities > 0 else 0
+
+        contributions.append(
+            {
+                'user': member,
+                'is_leader': member.id == group.created_by_id,
+                'assigned': assigned,
+                'completed': completed,
+                'activity_count': activity_count,
+                'completion_rate': completion_rate,
+                'contribution_share': contribution_share,
+                'activity_share': activity_share,
+            }
+        )
+
+    return {
+        'member_contributions': contributions,
+        'total_completed_tasks': total_completed_tasks,
+        'total_group_activities': total_group_activities,
+    }
 
 
 @login_required
@@ -96,24 +140,14 @@ def group_detail(request, group_id):
     total_tasks = tasks.count()
     completed_tasks = tasks.filter(status='COMPLETED').count()
     is_group_leader = _is_group_leader(request.user, group)
-
-    member_contributions = []
-    for member in group.members.all():
-        assigned = Task.objects.filter(group=group, assigned_to=member).count()
-        completed = Task.objects.filter(group=group, assigned_to=member, status='COMPLETED').count()
-        member_contributions.append(
-            {
-                'user': member,
-                'assigned': assigned,
-                'completed': completed,
-                'completion_rate': (completed / assigned * 100) if assigned > 0 else 0,
-            }
-        )
+    contribution_data = _build_member_contributions(group)
 
     context = {
         'group': group,
         'tasks': tasks,
-        'member_contributions': member_contributions,
+        'member_contributions': contribution_data['member_contributions'],
+        'total_group_activities': contribution_data['total_group_activities'],
+        'total_completed_member_tasks': contribution_data['total_completed_tasks'],
         'total_tasks': total_tasks,
         'completed_tasks': completed_tasks,
         'completion_percentage': (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0,

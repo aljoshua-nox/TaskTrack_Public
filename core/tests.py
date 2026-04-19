@@ -76,6 +76,57 @@ class CoreViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['group'], self.group)
 
+    def test_group_detail_contribution_tracker_uses_completed_and_activity_shares(self):
+        self.task.status = 'COMPLETED'
+        self.task.completed_at = timezone.now()
+        self.task.save()
+        Task.objects.create(
+            title='Second Completed Task',
+            description='Done by member_two',
+            group=self.group,
+            assigned_to=self.member_two,
+            created_by=self.owner,
+            deadline=timezone.now() + timedelta(days=3),
+            status='COMPLETED',
+            completed_at=timezone.now(),
+        )
+
+        ActivityLog.objects.create(
+            user=self.owner,
+            group=self.group,
+            action='GROUP_CREATED',
+            description='owner created group',
+        )
+        ActivityLog.objects.create(
+            user=self.member,
+            group=self.group,
+            task=self.task,
+            action='TASK_UPDATED',
+            description='member updated their task',
+        )
+        ActivityLog.objects.create(
+            user=self.member,
+            group=self.group,
+            task=self.task,
+            action='TASK_COMPLETED',
+            description='member completed their task',
+        )
+
+        self.client.login(username='owner', password='pass12345')
+        response = self.client.get(reverse('core:group_detail', args=[self.group.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_completed_member_tasks'], 2)
+        self.assertEqual(response.context['total_group_activities'], 3)
+
+        contributions = {
+            row['user'].username: row for row in response.context['member_contributions']
+        }
+        self.assertAlmostEqual(contributions['member']['contribution_share'], 50.0)
+        self.assertAlmostEqual(contributions['member_two']['contribution_share'], 50.0)
+        self.assertEqual(contributions['member']['activity_count'], 2)
+        self.assertAlmostEqual(contributions['member']['activity_share'], 66.6666, places=3)
+        self.assertTrue(contributions['owner']['is_leader'])
+
     def test_task_create_blocks_non_member(self):
         self.client.login(username='outsider', password='pass12345')
         response = self.client.post(

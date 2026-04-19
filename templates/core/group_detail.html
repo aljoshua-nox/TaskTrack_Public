@@ -27,6 +27,34 @@
         {% endif %}
         <a href="{% url 'core:group_list' %}" class="btn btn-secondary">Back to Groups</a>
     </div>
+
+    {% if member_contributions %}
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Group Members</h4>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for member in member_contributions %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="border rounded p-3 h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>{{ member.user.username }}</strong>
+                            {% if member.is_leader %}
+                                <span class="badge bg-primary">Leader</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Member</span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted d-block">Assigned: {{ member.assigned }}</small>
+                        <small class="text-muted d-block">Completed: {{ member.completed }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
     <div class="card">
         <div class="card-header bg-info text-white">
@@ -77,9 +105,26 @@
     {% if member_contributions %}
     <div class="card mt-4">
         <div class="card-header bg-secondary text-white">
-            <h4>Member Contributions</h4>
+            <h4>Contribution Tracker</h4>
         </div>
         <div class="card-body">
+            <p class="text-muted mb-3">
+                Tracks task completion and in-group activity so each member's participation is visible.
+            </p>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="border rounded p-3 h-100">
+                        <h6 class="mb-1">Completed Tasks in Group</h6>
+                        <strong>{{ total_completed_member_tasks }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3 mt-md-0">
+                    <div class="border rounded p-3 h-100">
+                        <h6 class="mb-1">Recorded Group Activities</h6>
+                        <strong>{{ total_group_activities }}</strong>
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -88,6 +133,9 @@
                             <th>Tasks Assigned</th>
                             <th>Tasks Completed</th>
                             <th>Completion Rate</th>
+                            <th>Contribution Share</th>
+                            <th>Activity Count</th>
+                            <th>Activity Share</th>
                             {% if is_group_leader %}
                                 <th>Manage</th>
                             {% endif %}
@@ -100,9 +148,12 @@
                             <td>{{ member.assigned }}</td>
                             <td>{{ member.completed }}</td>
                             <td>{{ member.completion_rate|floatformat:1 }}%</td>
+                            <td>{{ member.contribution_share|floatformat:1 }}%</td>
+                            <td>{{ member.activity_count }}</td>
+                            <td>{{ member.activity_share|floatformat:1 }}%</td>
                             {% if is_group_leader %}
                                 <td>
-                                    {% if member.user.id != group.created_by.id %}
+                                    {% if not member.is_leader %}
                                         <form method="post" action="{% url 'core:remove_group_member' group.id member.user.id %}">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
