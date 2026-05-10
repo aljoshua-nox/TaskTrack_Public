@@ -257,6 +257,18 @@ class CoreViewTests(TestCase):
         self.task.refresh_from_db()
         self.assertEqual(self.task.status, 'PENDING')
 
+    def test_task_detail_shows_full_progress_for_completed_task(self):
+        self.task.status = 'COMPLETED'
+        self.task.completed_at = timezone.now()
+        self.task.save()
+
+        self.client.login(username='member', password='pass12345')
+        response = self.client.get(reverse('core:task_detail', args=[self.task.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['task_progress_percentage'], 100)
+        self.assertContains(response, 'style="width: 100%;"')
+        self.assertContains(response, '100% Complete')
+
     def test_update_task_status_by_assigned_member_works(self):
         self.client.login(username='member', password='pass12345')
         response = self.client.post(

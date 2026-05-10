@@ -65,6 +65,14 @@ def _build_member_contributions(group):
     }
 
 
+def _get_task_progress_percentage(task):
+    if task.status == 'COMPLETED':
+        return 100
+    if task.status == 'IN_PROGRESS':
+        return 50
+    return 0
+
+
 @login_required
 def dashboard(request):
     user = request.user
@@ -242,6 +250,7 @@ def task_detail(request, task_id):
         'can_update_status': can_update_status,
         'can_delete_task': can_delete_task,
         'can_edit_task': can_edit_task,
+        'task_progress_percentage': _get_task_progress_percentage(task),
     }
     return render(request, 'core/task_detail.html', context)
 

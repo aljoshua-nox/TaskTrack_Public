@@ -91,10 +91,10 @@
                     <div class="text-center">
                         <div class="progress mb-3" style="height: 30px;">
                             <div class="progress-bar bg-success" role="progressbar" 
-                                 data-width="{% if task.status == 'COMPLETED' %}100{% elif task.status == 'IN_PROGRESS' %}50{% else %}0{% endif %}"
-                                 aria-valuenow="{% if task.status == 'COMPLETED' %}100{% elif task.status == 'IN_PROGRESS' %}50{% else %}0{% endif %}" 
+                                 style="width: {{ task_progress_percentage }}%;"
+                                 aria-valuenow="{{ task_progress_percentage }}" 
                                  aria-valuemin="0" aria-valuemax="100">
-                                {% if task.status == 'COMPLETED' %}Complete{% elif task.status == 'IN_PROGRESS' %}In Progress{% else %}Not Started{% endif %}
+                                {% if task.status == 'COMPLETED' %}100% Complete{% elif task.status == 'IN_PROGRESS' %}50% In Progress{% else %}0% Not Started{% endif %}
                             </div>
                         </div>
                     </div>
