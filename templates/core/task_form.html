@@ -5,7 +5,8 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow">
+            {% include 'includes/page_header.html' with eyebrow="Task Setup" eyebrow_icon="fas fa-clipboard-list" title=title subtitle="Set the task details, assignee, and deadline." %}
+            <div class="card app-card">
                 <div class="card-header bg-warning">
                     <h4 class="mb-0">{{ title }} for {{ group.name }}</h4>
                 </div>

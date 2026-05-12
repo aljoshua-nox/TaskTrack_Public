@@ -3,12 +3,23 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h2 class="mb-4">Welcome, {{ user.username }}!</h2>
+    {% include 'includes/page_header.html' with eyebrow="Dashboard" eyebrow_icon="fas fa-compass" title="Dashboard" subtitle="Your current workload, activity, and shortcuts in one place." %}
+    <p class="fw-semibold text-muted mb-4">Welcome, {{ user.username }}.</p>
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <a href="{% url 'core:group_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create Group
+        </a>
+        <a href="{% url 'core:join_group' %}" class="btn btn-outline-primary">
+            <i class="fas fa-sign-in-alt"></i> Join Group
+        </a>
+        <a href="{% url 'core:my_tasks' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-list-check"></i> My Tasks
+        </a>
+    </div>
 
-    <!-- Stats Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-white bg-primary mb-3">
+            <div class="card text-white bg-primary mb-3 app-card">
                 <div class="card-body">
                     <h5 class="card-title">Total Tasks Assigned</h5>
                     <h2 class="mb-0">{{ total_assigned }}</h2>
@@ -16,7 +27,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-success mb-3">
+            <div class="card text-white bg-success mb-3 app-card">
                 <div class="card-body">
                     <h5 class="card-title">Tasks Completed</h5>
                     <h2 class="mb-0">{{ total_completed }}</h2>
@@ -24,7 +35,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-info mb-3">
+            <div class="card text-white bg-info mb-3 app-card">
                 <div class="card-body">
                     <h5 class="card-title">Completion Rate</h5>
                     <h2 class="mb-0">{{ completion_rate }}%</h2>
@@ -32,7 +43,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-warning mb-3">
+            <div class="card text-white bg-warning mb-3 app-card">
                 <div class="card-body">
                     <h5 class="card-title">Groups Joined</h5>
                     <h2 class="mb-0">{{ groups_count }}</h2>
@@ -44,7 +55,7 @@
     <div class="row">
         <!-- Pending Tasks -->
         <div class="col-md-6">
-            <div class="card shadow">
+            <div class="card app-card">
                 <div class="card-header bg-warning">
                     <h5 class="mb-0"><i class="fas fa-clock"></i> Pending Tasks</h5>
                 </div>
@@ -75,7 +86,7 @@
 
         <!-- Recent Activities -->
         <div class="col-md-6">
-            <div class="card shadow">
+            <div class="card app-card">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0"><i class="fas fa-history"></i> Recent Activities</h5>
                 </div>
@@ -98,7 +109,7 @@
     <!-- Bottom Section: Quick Navigation & About -->
     <div class="row mt-4">
         <div class="col-md-6">
-            <div class="card shadow">
+            <div class="card app-card">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="fas fa-compass"></i> Quick Navigation</h5>
                 </div>
@@ -125,7 +136,7 @@
         </div>
 
         <div class="col-md-6">
-            <div class="card shadow">
+            <div class="card app-card">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0"><i class="fas fa-info-circle"></i> About TaskTrack</h5>
                 </div>
@@ -146,26 +157,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    .task-card {
-        transition: transform 0.2s;
-    }
-
-    .task-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .status-badge {
-        padding: 5px 10px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-    }
-
-    .status-PENDING { background-color: #ffc107; color: #000; }
-    .status-IN_PROGRESS { background-color: #17a2b8; color: #fff; }
-    .status-COMPLETED { background-color: #28a745; color: #fff; }
-    .status-OVERDUE { background-color: #dc3545; color: #fff; }
-</style>
 {% endblock %}

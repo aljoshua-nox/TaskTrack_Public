@@ -2,7 +2,9 @@
 
 {% block content %}
 <div class="container">
-    <div class="card mb-4">
+    {% include 'includes/page_header.html' with eyebrow="Group Overview" eyebrow_icon="fas fa-layer-group" title=group.name subtitle=group.description %}
+
+    <div class="card mb-4 app-card">
         <div class="card-header bg-primary text-white">
             <h3>{{ group.name }}</h3>
         </div>
@@ -56,7 +58,7 @@
     </div>
     {% endif %}
     
-    <div class="card">
+    <div class="card app-card">
         <div class="card-header bg-info text-white">
             <h4>Tasks</h4>
         </div>
@@ -102,8 +104,8 @@
         </div>
     </div>
 
-    <div class="card mt-4">
-        <div class="card-header bg-light">
+    <div class="card mt-4 app-card">
+        <div class="card-header bg-dark text-white">
             <h4 class="mb-0">Group Activity History</h4>
         </div>
         <div class="card-body">
@@ -132,7 +134,7 @@
     </div>
     
     {% if member_contributions %}
-    <div class="card mt-4">
+    <div class="card mt-4 app-card">
         <div class="card-header bg-secondary text-white">
             <h4>Contribution Tracker</h4>
         </div>
@@ -183,7 +185,7 @@
                             {% if is_group_leader %}
                                 <td>
                                     {% if not member.is_leader %}
-                                        <form method="post" action="{% url 'core:remove_group_member' group.id member.user.id %}">
+                                        <form method="post" action="{% url 'core:remove_group_member' group.id member.user.id %}" onsubmit="return confirm('Remove {{ member.user.username|escapejs }} from this group? This action is permanent and they will lose access to the group.')">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
                                         </form>
@@ -199,28 +201,4 @@
     </div>
     {% endif %}
 </div>
-
-<style>
-    .badge {
-        padding: 5px 10px;
-        border-radius: 5px;
-        font-size: 12px;
-    }
-    .bg-warning {
-        background-color: #ffc107;
-        color: #000;
-    }
-    .bg-info {
-        background-color: #17a2b8;
-        color: #fff;
-    }
-    .bg-success {
-        background-color: #28a745;
-        color: #fff;
-    }
-    .bg-danger {
-        background-color: #dc3545;
-        color: #fff;
-    }
-</style>
 {% endblock %}

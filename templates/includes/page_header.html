@@ -1,0 +1,19 @@
+<div class="page-header p-4 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            {% if eyebrow %}
+                <div class="page-header__eyebrow">
+                    {% if eyebrow_icon %}<i class="{{ eyebrow_icon }}"></i>{% endif %}
+                    <span>{{ eyebrow }}</span>
+                </div>
+            {% endif %}
+            <h1 class="page-header__title h3">{{ title }}</h1>
+            <p class="page-header__subtitle">{{ subtitle|default:"A cleaner, more focused workspace for your project work." }}</p>
+        </div>
+        {% if actions %}
+            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                {{ actions|safe }}
+            </div>
+        {% endif %}
+    </div>
+</div>
