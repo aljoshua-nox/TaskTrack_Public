@@ -1,33 +1,270 @@
 {% extends 'base.html' %}
 {% block title %}Login - TaskTrack{% endblock %}
 
+{% block extra_css %}
+<style>
+    .login-page {
+        min-height: calc(100vh - 120px);
+        display: flex;
+        align-items: center;
+        padding: 32px 0 48px;
+        background:
+            radial-gradient(circle at top right, rgba(13, 110, 253, 0.16), transparent 34%),
+            radial-gradient(circle at bottom left, rgba(13, 110, 253, 0.10), transparent 30%);
+    }
+
+    .login-shell {
+        overflow: hidden;
+        border: 0;
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
+    }
+
+    .login-aside {
+        background: linear-gradient(160deg, #0d6efd 0%, #0b4db7 100%);
+        color: #fff;
+        padding: 40px 36px;
+        min-height: 100%;
+    }
+
+    .login-aside .brand-mark {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.14);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        font-size: 1.4rem;
+    }
+
+    .login-aside h2 {
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .login-aside p {
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    .feature-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+        margin: 6px 8px 0 0;
+        font-size: 0.92rem;
+    }
+
+    .login-form-panel {
+        background: #fff;
+        padding: 40px 36px;
+    }
+
+    .info-section {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(13, 110, 253, 0.10);
+    }
+
+    .login-eyebrow {
+        color: #0d6efd;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+
+    .login-title {
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .login-subtitle {
+        color: #6c757d;
+        margin-bottom: 28px;
+    }
+
+    .login-field .form-control {
+        border-color: #dbe2ea;
+        padding: 0.9rem 1rem;
+        border-radius: 16px;
+    }
+
+    .login-field .form-control:focus {
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+        border-color: #0d6efd;
+    }
+
+    .login-submit {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        border: none;
+        padding: 0.95rem 1rem;
+        font-weight: 700;
+        border-radius: 14px;
+        box-shadow: 0 12px 24px rgba(13, 110, 253, 0.22);
+        width: 100%;
+    }
+
+    .login-submit:hover {
+        background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+    }
+
+    .login-footer a {
+        color: #0d6efd;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .login-footer a:hover {
+        text-decoration: underline;
+    }
+
+    .intro-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 10px;
+    }
+
+    .overview-box {
+        margin-bottom: 15px;
+        padding-left: 14px;
+        border-left: 3px solid rgba(13, 110, 253, 0.4);
+    }
+
+    .overview-box h4 {
+        margin: 0 0 5px 0;
+        font-size: 0.95rem;
+        color: #212529;
+    }
+
+    .overview-box p {
+        margin: 0;
+        color: #495057;
+        line-height: 1.55;
+        font-size: 0.92rem;
+    }
+
+    .highlight {
+        margin-top: 18px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: rgba(13, 110, 253, 0.06);
+        border-left: 3px solid #0d6efd;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .login-aside {
+            padding: 28px;
+        }
+
+        .login-form-panel {
+            padding: 28px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h4><i class="fas fa-sign-in-alt"></i> Login to TaskTrack</h4>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        {% for field in form %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            {{ field.errors }}
-                            {{ field }}
-                            {% if field.help_text %}
-                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                            {% endif %}
+<div class="login-page">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-10">
+                <div class="card login-shell">
+                    <div class="row g-0">
+                        <div class="col-lg-5 login-aside d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="brand-mark">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+                                <h2 class="mb-3">Welcome back</h2>
+                                <p class="mb-4">
+                                    Sign in to keep projects organized and moving.
+                                </p>
+                                <div class="mb-4">
+                                    <span class="feature-pill"><i class="fas fa-check"></i> Task tracking</span>
+                                    <span class="feature-pill"><i class="fas fa-users"></i> Group work</span>
+                                    <span class="feature-pill"><i class="fas fa-chart-line"></i> Progress</span>
+                                </div>
+                            </div>
                         </div>
-                        {% endfor %}
-                        <button type="submit" class="btn btn-primary w-100">Login</button>
-                    </form>
-                    <hr>
-                    <p class="text-center mb-0">
-                        Don't have an account? <a href="{% url 'accounts:register' %}">Register here</a>
-                    </p>
+
+                        <div class="col-lg-7 login-form-panel">
+                            <div class="login-eyebrow mb-2">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </div>
+                            <h3 class="login-title">Sign in to your account</h3>
+                            <p class="login-subtitle">Enter your username and password to continue.</p>
+
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.non_field_errors }}
+                                </div>
+                            {% endif %}
+
+                            <form method="post" novalidate>
+                                {% csrf_token %}
+
+                                <div class="mb-3 login-field">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">
+                                        <i class="fas fa-user me-1 text-success"></i> {{ form.username.label }}
+                                    </label>
+                                    {{ form.username }}
+                                    {% if form.username.errors %}
+                                        <div class="text-danger small mt-2">{{ form.username.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-4 login-field">
+                                    <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold">
+                                        <i class="fas fa-lock me-1 text-success"></i> {{ form.password.label }}
+                                    </label>
+                                    {{ form.password }}
+                                    {% if form.password.errors %}
+                                        <div class="text-danger small mt-2">{{ form.password.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <button type="submit" class="btn btn-success login-submit">
+                                    <i class="fas fa-sign-in-alt me-1"></i> Login
+                                </button>
+                            </form>
+
+                            <hr class="my-4">
+
+                            <p class="text-center mb-0 login-footer">
+                                Don't have an account? <a href="{% url 'accounts:register' %}">Register here</a>
+                            </p>
+                            <div class="info-section">
+                                <div class="intro-title">What is TaskTrack about?</div>
+
+                                <div class="overview-box">
+                                    <h4>Problem</h4>
+                                    <p>Group projects often get messy from unclear roles and missed deadlines.</p>
+                                </div>
+
+                                <div class="overview-box">
+                                    <h4>Solution</h4>
+                                    <p>TaskTrack helps students organize tasks and monitor progress in one place.</p>
+                                </div>
+
+                                <div class="overview-box">
+                                    <h4>Feature</h4>
+                                    <p>Contribution tracking keeps work visible, fair, and accountable.</p>
+                                </div>
+
+                                <div class="highlight">
+                                    Built to improve organization, collaboration, and responsibility.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

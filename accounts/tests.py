@@ -20,12 +20,25 @@ class AccountViewTests(TestCase):
         self.assertRedirects(response, reverse('core:dashboard'))
         self.assertTrue(User.objects.filter(username='newstudent').exists())
 
+    def test_register_page_uses_styled_layout_without_email_field(self):
+        response = self.client.get(reverse('accounts:register'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'fa-user-plus')
+        self.assertNotContains(response, 'type="email"')
+
     def test_login_with_valid_credentials_redirects_to_dashboard(self):
         response = self.client.post(
             reverse('accounts:login'),
             {'username': 'student1', 'password': self.password},
         )
         self.assertRedirects(response, reverse('core:dashboard'))
+
+    def test_login_page_uses_updated_layout(self):
+        response = self.client.get(reverse('accounts:login'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Welcome back')
+        self.assertContains(response, 'What is TaskTrack about?')
+        self.assertContains(response, "Don't have an account?")
 
     def test_login_with_invalid_credentials_stays_on_login_page(self):
         response = self.client.post(
