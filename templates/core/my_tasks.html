@@ -13,7 +13,6 @@
         </a>
     </div>
 
-    <!-- AI Suggestions Section -->
     {% if suggestions %}
     <div class="alert alert-info shadow mb-4">
         <h5><i class="fas fa-lightbulb"></i> Task Suggestions</h5>
@@ -30,7 +29,6 @@
     </div>
     {% endif %}
 
-    <!-- Pending Tasks -->
     <div class="card mb-4 app-card">
         <div class="card-header bg-warning">
             <h5 class="mb-0"><i class="fas fa-clock"></i> Pending Tasks ({{ pending_tasks.count }})</h5>
@@ -95,7 +93,6 @@
         </div>
     </div>
 
-    <!-- Completed Tasks -->
     <div class="card app-card">
         <div class="card-header bg-success text-white">
             <h5 class="mb-0"><i class="fas fa-check-circle"></i> Completed Tasks ({{ completed_tasks.count }})</h5>

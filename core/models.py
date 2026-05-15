@@ -1,7 +1,8 @@
-from django.db import models
 from django.contrib.auth.models import User
-from django.utils import timezone
+from django.db import models
 from django.urls import reverse
+from django.utils import timezone
+
 import random
 import string
 
@@ -10,8 +11,15 @@ def generate_join_code(length=8):
     alphabet = string.ascii_uppercase + string.digits
     return ''.join(random.choices(alphabet, k=length))
 
+
+def _generate_unique_join_code(model, length=8):
+    while True:
+        join_code = generate_join_code(length)
+        if not model.objects.filter(join_code=join_code).exists():
+            return join_code
+
+
 class Group(models.Model):
-    """Project group model"""
     name = models.CharField(max_length=200)
     join_code = models.CharField(
         max_length=8,
@@ -30,32 +38,28 @@ class Group(models.Model):
     
     def __str__(self):
         return self.name
-    
+
     def get_absolute_url(self):
         return reverse('group_detail', args=[self.id])
-    
+
     def get_member_count(self):
         return self.members.count()
-    
+
     def get_completed_tasks_count(self):
         return self.tasks.filter(status='COMPLETED').count()
-    
+
     def get_total_tasks_count(self):
         return self.tasks.count()
 
-    def _generate_join_code(self, length=8):
-        alphabet = string.ascii_uppercase + string.digits
-        while True:
-            code = ''.join(random.choices(alphabet, k=length))
-            if not self.__class__.objects.filter(join_code=code).exists():
-                return code
-
     def save(self, *args, **kwargs):
         if not self.join_code:
-            self.join_code = self._generate_join_code()
+            self.join_code = _generate_unique_join_code(self.__class__)
+
         while self.__class__.objects.filter(join_code=self.join_code).exclude(pk=self.pk).exists():
-            self.join_code = self._generate_join_code()
+            self.join_code = _generate_unique_join_code(self.__class__)
+
         super().save(*args, **kwargs)
+
 
 class Task(models.Model):
     STATUS_CHOICES = [
@@ -82,24 +86,23 @@ class Task(models.Model):
     
     def __str__(self):
         return self.title
-    
+
     def get_absolute_url(self):
         return reverse('task_detail', args=[self.id])
-    
+
     def is_overdue(self):
-        if self.status != 'COMPLETED' and self.deadline < timezone.now():
-            return True
-        return False
-    
+        return self.status != 'COMPLETED' and self.deadline < timezone.now()
+
     def mark_completed(self):
         self.status = 'COMPLETED'
         self.completed_at = timezone.now()
         self.save()
-    
+
     def save(self, *args, **kwargs):
-        if not self.status == 'COMPLETED' and self.deadline < timezone.now():
+        if self.status != 'COMPLETED' and self.deadline < timezone.now():
             self.status = 'OVERDUE'
         super().save(*args, **kwargs)
+
 
 class ActivityLog(models.Model):
     ACTION_CHOICES = [
@@ -125,4 +128,4 @@ class ActivityLog(models.Model):
         ordering = ['-timestamp']
     
     def __str__(self):
-        return f"{self.user.username} - {self.action} - {self.timestamp}"
+        return f'{self.user.username} - {self.action} - {self.timestamp}'

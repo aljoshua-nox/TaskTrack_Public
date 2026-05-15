@@ -1,6 +1,7 @@
-from django.utils import timezone
 from django import forms
 from django.contrib.auth.models import User
+from django.utils import timezone
+
 from .models import Group, Task
 
 
@@ -12,6 +13,7 @@ class GroupForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Group Name'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Group Description'}),
         }
+
 
 class TaskForm(forms.ModelForm):
     deadline = forms.DateTimeField(
@@ -40,17 +42,9 @@ class TaskForm(forms.ModelForm):
     def clean_deadline(self):
         deadline = self.cleaned_data['deadline']
         if deadline < timezone.now():
-            raise forms.ValidationError("Deadline cannot be in the past.")
+            raise forms.ValidationError('Deadline cannot be in the past.')
         return deadline
 
-class TaskUpdateForm(forms.ModelForm):
-    class Meta:
-        model = Task
-        fields = ['status', 'file_link']
-        widgets = {
-            'status': forms.Select(attrs={'class': 'form-control'}),
-            'file_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://drive.google.com/...'}),
-        }
 
 class JoinGroupForm(forms.Form):
     join_code = forms.CharField(

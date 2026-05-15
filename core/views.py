@@ -73,6 +73,26 @@ def _get_task_progress_percentage(task):
     return 0
 
 
+def _describe_task_changes(old_values, task):
+    change_messages = []
+
+    if old_values['title'] != task.title:
+        change_messages.append(f'title from "{old_values["title"]}" to "{task.title}"')
+    if old_values['description'] != task.description:
+        change_messages.append('description')
+    if old_values['assigned_to'] != task.assigned_to.username:
+        change_messages.append(f'assignee from "{old_values["assigned_to"]}" to "{task.assigned_to.username}"')
+    if old_values['deadline'] != task.deadline:
+        change_messages.append(
+            f'deadline from {old_values["deadline"].strftime("%Y-%m-%d %H:%M")} '
+            f'to {task.deadline.strftime("%Y-%m-%d %H:%M")}'
+        )
+    if old_values['file_link'] != task.file_link:
+        change_messages.append('file link')
+
+    return '; '.join(change_messages) if change_messages else 'no field changes'
+
+
 @login_required
 def dashboard(request):
     user = request.user
@@ -291,28 +311,7 @@ def task_edit(request, task_id):
         form = TaskForm(request.POST, instance=task, group=group)
         if form.is_valid():
             task = form.save()
-
-            change_messages = []
-            if old_values['title'] != task.title:
-                change_messages.append(f'title from "{old_values["title"]}" to "{task.title}"')
-            if old_values['description'] != task.description:
-                change_messages.append('description')
-            if old_values['assigned_to'] != task.assigned_to.username:
-                change_messages.append(
-                    f'assignee from "{old_values["assigned_to"]}" to "{task.assigned_to.username}"'
-                )
-            if old_values['deadline'] != task.deadline:
-                change_messages.append(
-                    f'deadline from {old_values["deadline"].strftime("%Y-%m-%d %H:%M")} '
-                    f'to {task.deadline.strftime("%Y-%m-%d %H:%M")}'
-                )
-            if old_values['file_link'] != task.file_link:
-                change_messages.append('file link')
-
-            if not change_messages:
-                change_summary = 'no field changes'
-            else:
-                change_summary = '; '.join(change_messages)
+            change_summary = _describe_task_changes(old_values, task)
 
             ActivityLog.objects.create(
                 user=request.user,
@@ -395,6 +394,7 @@ def update_task_status(request, task_id):
     task.save()
 
     status_map = dict(Task.STATUS_CHOICES)
+    # Keep rollback context in the activity trail so completed-task reversals stay auditable.
     description = (
         f'{request.user.username} changed "{task.title}" from '
         f'{status_map.get(old_status, old_status)} to {status_map.get(new_status, new_status)}'
