@@ -83,7 +83,10 @@
                         <tbody>
                             {% for task in tasks %}
                             <tr class="{% if task.is_overdue %}is-late{% endif %}">
-                                <td><a class="row-link" href="{% url 'core:task_detail' task.id %}">{{ task.title }}</a></td>
+                                <td>
+                                    <a class="row-link" href="{% url 'core:task_detail' task.id %}">{{ task.title }}</a>
+                                    {% if task.comment_count %}<span class="comment-count" title="{{ task.comment_count }} comment{{ task.comment_count|pluralize }}"><i class="far fa-comment"></i>{{ task.comment_count }}</span>{% endif %}
+                                </td>
                                 <td>
                                     <span class="d-inline-flex align-items-center gap-2">
                                         <span class="avatar avatar-sm">{{ task.assigned_to.username|first }}</span>{{ task.assigned_to.username }}

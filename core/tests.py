@@ -2,12 +2,14 @@ import logging
 from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.db import connection
 from django.test import TestCase, override_settings
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
-from .models import ActivityLog, Group, Task
+from .models import ActivityLog, Group, Task, TaskComment
 
 
 def form_deadline(dt):
@@ -1057,3 +1059,211 @@ class StatsAndContributionEdgeCaseTests(TaskTrackTestCase):
         response = self.client.get(reverse('core:my_tasks'))
         titles = {task.title for task in response.context['pending_tasks']}
         self.assertEqual(titles, {'Initial Task'})
+
+
+class TaskCommentTests(TaskTrackTestCase):
+    def comment_url(self, task=None):
+        return reverse('core:task_comment_create', args=[(task or self.task).id])
+
+    def delete_url(self, comment):
+        return reverse('core:task_comment_delete', args=[comment.id])
+
+    def detail_url(self, task=None):
+        return reverse('core:task_detail', args=[(task or self.task).id])
+
+    def add_comment(self, author, body='Looks good', task=None):
+        return TaskComment.objects.create(task=task or self.task, author=author, body=body)
+
+    def messages_of(self, response):
+        return [str(message) for message in response.context['messages']]
+
+    def test_assignee_and_non_assignee_members_can_comment(self):
+        for user in (self.member, self.member_two, self.owner):
+            self.client.force_login(user)
+            response = self.client.post(self.comment_url(), {'body': f'Note from {user.username}'})
+            self.assertRedirects(response, f'{self.detail_url()}#comments', fetch_redirect_response=False)
+        self.assertEqual(
+            list(self.task.comments.values_list('author__username', flat=True)),
+            ['member', 'member_two', 'owner'],
+        )
+
+    def test_comment_creates_activity_log_entry(self):
+        self.client.force_login(self.member_two)
+        self.client.post(self.comment_url(), {'body': 'Can I help with this?'})
+        log = ActivityLog.objects.get(action='COMMENT_ADDED')
+        self.assertEqual(log.user, self.member_two)
+        self.assertEqual(log.group, self.group)
+        self.assertEqual(log.task, self.task)
+
+    def test_comment_counts_toward_activity_share(self):
+        self.client.force_login(self.member_two)
+        self.client.post(self.comment_url(), {'body': 'Progress update'})
+        response = self.client.get(reverse('core:group_detail', args=[self.group.id]))
+        rows = {row['user'].username: row for row in response.context['member_contributions']}
+        self.assertEqual(rows['member_two']['activity_count'], 1)
+
+    def test_comment_body_is_stripped_and_line_breaks_kept(self):
+        self.client.force_login(self.member)
+        self.client.post(self.comment_url(), {'body': '  first line\nsecond line  '})
+        comment = self.task.comments.get()
+        self.assertEqual(comment.body, 'first line\nsecond line')
+        response = self.client.get(self.detail_url())
+        self.assertContains(response, '<div class="comment-body">first line\nsecond line</div>', html=False)
+
+    def test_comment_body_is_escaped(self):
+        self.add_comment(self.member, body='<script>alert(1)</script>')
+        self.client.force_login(self.member)
+        response = self.client.get(self.detail_url())
+        self.assertNotContains(response, '<script>alert(1)</script>')
+        self.assertContains(response, '&lt;script&gt;alert(1)&lt;/script&gt;')
+
+    def test_blank_and_whitespace_comments_are_rejected(self):
+        self.client.force_login(self.member)
+        for body in ('', '   ', '\n\t \n'):
+            response = self.client.post(self.comment_url(), {'body': body}, follow=True)
+            self.assertRedirects(response, self.detail_url())
+            self.assertIn('Comment cannot be empty.', self.messages_of(response))
+        self.assertFalse(TaskComment.objects.exists())
+        self.assertFalse(ActivityLog.objects.filter(action='COMMENT_ADDED').exists())
+
+    def test_overlong_comment_is_rejected(self):
+        self.client.force_login(self.member)
+        self.client.post(self.comment_url(), {'body': 'x' * (TaskComment.BODY_MAX_LENGTH + 1)})
+        self.assertFalse(TaskComment.objects.exists())
+        self.client.post(self.comment_url(), {'body': 'x' * TaskComment.BODY_MAX_LENGTH})
+        self.assertEqual(TaskComment.objects.count(), 1)
+
+    def test_outsider_cannot_post_comment(self):
+        self.client.force_login(self.outsider)
+        response = self.client.post(self.comment_url(), {'body': 'Hi'}, follow=True)
+        self.assertRedirects(response, reverse('core:dashboard'))
+        self.assertIn('You do not have access to this task.', self.messages_of(response))
+        self.assertFalse(TaskComment.objects.exists())
+
+    def test_outsider_cannot_view_comments(self):
+        self.add_comment(self.member, body='Secret plan')
+        self.client.force_login(self.outsider)
+        self.assertRedirects(self.client.get(self.detail_url()), reverse('core:dashboard'))
+
+    def test_removed_member_cannot_view_or_post(self):
+        self.add_comment(self.member_two, body='Before removal')
+        self.group.members.remove(self.member_two)
+        self.client.force_login(self.member_two)
+        self.assertRedirects(self.client.get(self.detail_url()), reverse('core:dashboard'))
+        response = self.client.post(self.comment_url(), {'body': 'After removal'})
+        self.assertRedirects(response, reverse('core:dashboard'))
+        self.assertEqual(TaskComment.objects.count(), 1)
+
+    def test_anonymous_user_is_sent_to_login(self):
+        response = self.client.post(self.comment_url(), {'body': 'Hi'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+        comment = self.add_comment(self.member)
+        response = self.client.post(self.delete_url(comment))
+        self.assertIn('/accounts/login/', response.url)
+        self.assertEqual(TaskComment.objects.count(), 1)
+
+    def test_comment_endpoints_reject_get(self):
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.get(self.comment_url()).status_code, 405)
+        comment = self.add_comment(self.member)
+        self.assertEqual(self.client.get(self.delete_url(comment)).status_code, 405)
+
+    def test_comment_endpoints_404_for_missing_objects(self):
+        self.client.force_login(self.member)
+        self.assertEqual(
+            self.client.post(reverse('core:task_comment_create', args=[99999]), {'body': 'Hi'}).status_code, 404
+        )
+        self.assertEqual(self.client.post(reverse('core:task_comment_delete', args=[99999])).status_code, 404)
+
+    def test_task_detail_lists_comments_oldest_first_with_empty_state(self):
+        self.client.force_login(self.member_two)
+        self.assertContains(self.client.get(self.detail_url()), 'No comments yet')
+        first = self.add_comment(self.owner, body='First')
+        second = self.add_comment(self.member, body='Second')
+        response = self.client.get(self.detail_url())
+        self.assertEqual(list(response.context['comments']), [first, second])
+        self.assertNotContains(response, 'No comments yet')
+
+    def test_author_can_delete_own_comment(self):
+        comment = self.add_comment(self.member_two)
+        self.client.force_login(self.member_two)
+        response = self.client.post(self.delete_url(comment))
+        self.assertRedirects(response, f'{self.detail_url()}#comments', fetch_redirect_response=False)
+        self.assertFalse(TaskComment.objects.exists())
+        log = ActivityLog.objects.get(action='COMMENT_DELETED')
+        self.assertEqual(log.user, self.member_two)
+        self.assertIn('deleted their comment', log.description)
+
+    def test_leader_can_delete_any_comment(self):
+        comment = self.add_comment(self.member)
+        self.client.force_login(self.owner)
+        self.client.post(self.delete_url(comment))
+        self.assertFalse(TaskComment.objects.exists())
+        self.assertIn("deleted member's comment", ActivityLog.objects.get(action='COMMENT_DELETED').description)
+
+    def test_other_member_cannot_delete_comment(self):
+        comment = self.add_comment(self.member)
+        self.client.force_login(self.member_two)
+        response = self.client.post(self.delete_url(comment), follow=True)
+        self.assertRedirects(response, self.detail_url())
+        self.assertIn(
+            'Only the comment author or the group leader can delete this comment.',
+            self.messages_of(response),
+        )
+        self.assertEqual(TaskComment.objects.count(), 1)
+
+    def test_outsider_and_removed_author_cannot_delete(self):
+        comment = self.add_comment(self.member_two)
+        self.client.force_login(self.outsider)
+        self.assertRedirects(self.client.post(self.delete_url(comment)), reverse('core:dashboard'))
+        self.group.members.remove(self.member_two)
+        self.client.force_login(self.member_two)
+        self.assertRedirects(self.client.post(self.delete_url(comment)), reverse('core:dashboard'))
+        self.assertEqual(TaskComment.objects.count(), 1)
+
+    def test_delete_button_shown_only_to_author_and_leader(self):
+        self.add_comment(self.member)
+        delete_label = 'aria-label="Delete comment by member"'
+        for user, visible in ((self.member, True), (self.owner, True), (self.member_two, False)):
+            self.client.force_login(user)
+            response = self.client.get(self.detail_url())
+            if visible:
+                self.assertContains(response, delete_label)
+            else:
+                self.assertNotContains(response, delete_label)
+
+    def test_deleting_task_removes_its_comments(self):
+        self.add_comment(self.member)
+        self.task.delete()
+        self.assertFalse(TaskComment.objects.exists())
+
+    def test_group_detail_shows_comment_counts_without_extra_queries(self):
+        other = self.make_task('Second task')
+        self.add_comment(self.member)
+        self.add_comment(self.owner)
+        self.add_comment(self.member_two, task=other)
+        self.client.force_login(self.member)
+        url = reverse('core:group_detail', args=[self.group.id])
+        response = self.client.get(url)
+        counts = {task.title: task.comment_count for task in response.context['tasks']}
+        self.assertEqual(counts, {'Initial Task': 2, 'Second task': 1})
+
+        with CaptureQueriesContext(connection) as before:
+            self.client.get(url)
+        for index in range(3):
+            self.add_comment(self.member, task=self.make_task(f'Extra {index}'))
+        with CaptureQueriesContext(connection) as after:
+            self.client.get(url)
+        self.assertEqual(len(after.captured_queries), len(before.captured_queries))
+
+    def test_task_detail_comment_queries_do_not_grow_with_comments(self):
+        self.client.force_login(self.member)
+        self.add_comment(self.member)
+        with CaptureQueriesContext(connection) as before:
+            self.client.get(self.detail_url())
+        for user in (self.owner, self.member_two, self.member):
+            self.add_comment(user)
+        with CaptureQueriesContext(connection) as after:
+            self.client.get(self.detail_url())
+        self.assertEqual(len(after.captured_queries), len(before.captured_queries))

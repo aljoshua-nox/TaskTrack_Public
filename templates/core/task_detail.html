@@ -116,6 +116,51 @@
                 {% endif %}
             </div>
         </section>
+
+        <section class="panel" id="comments">
+            <div class="panel-head"><h2 class="panel-title">Discussion<span class="count">{{ comments|length }}</span></h2></div>
+            {% if comments %}
+                <ul class="item-list">
+                    {% for comment in comments %}
+                    <li class="comment">
+                        <span class="avatar">{{ comment.author.username|first }}</span>
+                        <div class="comment-main">
+                            <div class="comment-head">
+                                <span class="comment-author">{{ comment.author.username }}</span>
+                                {% if comment.author_id == task.group.created_by_id %}<span class="tag tag-accent">Leader</span>{% endif %}
+                                <span class="comment-time" title="{{ comment.created_at|date:'M d, Y H:i' }}">{{ comment.created_at|timesince }} ago</span>
+                                {% if comment.author_id == request.user.id or is_group_leader %}
+                                <form method="post" action="{% url 'core:task_comment_delete' comment.id %}" class="comment-delete" onsubmit="return confirm('Delete this comment? This cannot be undone.')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="icon-btn" title="Delete comment" aria-label="Delete comment by {{ comment.author.username }}"><i class="fas fa-trash"></i></button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            <div class="comment-body">{{ comment.body }}</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="empty">
+                    <h3>No comments yet</h3>
+                    <p>Ask a question or share an update with your group.</p>
+                </div>
+            {% endif %}
+            <div class="panel-body comment-form">
+                <form method="post" action="{% url 'core:task_comment_create' task.id %}">
+                    {% csrf_token %}
+                    <div class="field">
+                        <label for="{{ comment_form.body.id_for_label }}" class="form-label">Add a comment</label>
+                        {{ comment_form.body }}
+                        <div class="form-text">Visible to everyone in {{ task.group.name }}. Up to {{ comment_max_length }} characters.</div>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Post comment</button>
+                    </div>
+                </form>
+            </div>
+        </section>
     </div>
 
     <div class="col-lg-4">

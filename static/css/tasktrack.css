@@ -347,6 +347,19 @@ a.task-row:hover { background: var(--tt-surface-muted); text-decoration: none; c
 .activity-meta { font-size: 0.77rem; color: var(--tt-text-subtle); margin-top: 0.15rem; }
 .activity-meta a { color: var(--tt-text-muted); }
 
+#comments { scroll-margin-top: 4.5rem; }
+.comment { display: flex; gap: 0.75rem; padding: 0.9rem 1.15rem; }
+.comment-main { flex: 1; min-width: 0; }
+.comment-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; min-height: 30px; }
+.comment-author { font-weight: 600; font-size: 0.875rem; }
+.comment-time { font-size: 0.77rem; color: var(--tt-text-subtle); }
+.comment-delete { margin-left: auto; }
+.comment-delete .icon-btn { width: 28px; height: 28px; font-size: 0.75rem; }
+.comment-delete .icon-btn:hover { color: var(--tt-overdue-fg); }
+.comment-body { font-size: 0.875rem; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; margin-top: 0.15rem; }
+.comment-form { border-top: 1px solid var(--tt-border); }
+.comment-count { display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.5rem; font-size: 0.77rem; color: var(--tt-text-subtle); white-space: nowrap; }
+
 /* ---------- Empty states ---------- */
 
 .empty {

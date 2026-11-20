@@ -120,6 +120,8 @@ class ActivityLog(models.Model):
         ('GROUP_JOINED', 'Group Joined'),
         ('MEMBER_REMOVED', 'Member Removed'),
         ('TASK_ASSIGNED', 'Task Assigned'),
+        ('COMMENT_ADDED', 'Comment Added'),
+        ('COMMENT_DELETED', 'Comment Deleted'),
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')
@@ -134,3 +136,18 @@ class ActivityLog(models.Model):
     
     def __str__(self):
         return f'{self.user.username} - {self.action} - {self.timestamp}'
+
+
+class TaskComment(models.Model):
+    BODY_MAX_LENGTH = 2000
+
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='task_comments')
+    body = models.TextField(max_length=BODY_MAX_LENGTH)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'id']
+
+    def __str__(self):
+        return f'{self.author.username} on {self.task.title}'

@@ -1,7 +1,7 @@
 {% with action=activity.action %}
 <div class="activity">
     <span class="activity-icon {% if action == 'TASK_CREATED' or action == 'GROUP_CREATED' %}create{% elif action == 'TASK_COMPLETED' %}done{% elif action == 'GROUP_JOINED' %}join{% elif action == 'TASK_DELETED' or action == 'GROUP_DELETED' or action == 'MEMBER_REMOVED' %}remove{% endif %}">
-        <i class="fas {% if action == 'TASK_CREATED' or action == 'GROUP_CREATED' %}fa-plus{% elif action == 'TASK_COMPLETED' %}fa-check{% elif action == 'GROUP_JOINED' %}fa-right-to-bracket{% elif action == 'MEMBER_REMOVED' %}fa-user-minus{% elif action == 'TASK_DELETED' or action == 'GROUP_DELETED' %}fa-trash{% elif action == 'TASK_ASSIGNED' %}fa-user-tag{% else %}fa-pen{% endif %}"></i>
+        <i class="fas {% if action == 'TASK_CREATED' or action == 'GROUP_CREATED' %}fa-plus{% elif action == 'TASK_COMPLETED' %}fa-check{% elif action == 'GROUP_JOINED' %}fa-right-to-bracket{% elif action == 'MEMBER_REMOVED' %}fa-user-minus{% elif action == 'TASK_DELETED' or action == 'GROUP_DELETED' %}fa-trash{% elif action == 'TASK_ASSIGNED' %}fa-user-tag{% elif action == 'COMMENT_ADDED' %}fa-comment{% elif action == 'COMMENT_DELETED' %}fa-comment-slash{% else %}fa-pen{% endif %}"></i>
     </span>
     <div class="min-w-0">
         <div class="activity-text">{{ activity.description }}</div>

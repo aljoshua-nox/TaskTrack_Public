@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import Group, Task
+from .models import Group, Task, TaskComment
 
 
 class GroupForm(forms.ModelForm):
@@ -60,3 +60,15 @@ class JoinGroupForm(forms.Form):
 
     def clean_join_code(self):
         return self.cleaned_data['join_code'].strip().upper()
+
+
+class TaskCommentForm(forms.ModelForm):
+    class Meta:
+        model = TaskComment
+        fields = ['body']
+        widgets = {
+            'body': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Write a comment...'}),
+        }
+        error_messages = {
+            'body': {'required': 'Comment cannot be empty.'},
+        }

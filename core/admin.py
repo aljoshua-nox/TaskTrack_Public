@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Group, Task, ActivityLog
+from .models import ActivityLog, Group, Task, TaskComment
 
 # Register your models here.
 
@@ -20,3 +20,9 @@ class ActivityLogAdmin(admin.ModelAdmin):
     list_display = ['user', 'action', 'group', 'task', 'timestamp']
     list_filter = ['action', 'timestamp']
     search_fields = ['description']
+
+@admin.register(TaskComment)
+class TaskCommentAdmin(admin.ModelAdmin):
+    list_display = ['author', 'task', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['body']

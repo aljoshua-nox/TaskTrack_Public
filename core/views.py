@@ -5,11 +5,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import GroupForm, JoinGroupForm, TaskForm
-from .models import ActivityLog, Group, Task
+from .forms import GroupForm, JoinGroupForm, TaskCommentForm, TaskForm
+from .models import ActivityLog, Group, Task, TaskComment
 
 logger = logging.getLogger('core')
 
@@ -171,7 +172,7 @@ def group_detail(request, group_id):
         messages.error(request, 'You are not a member of this group.')
         return redirect('core:group_list')
 
-    tasks = group.tasks.select_related('assigned_to')
+    tasks = group.tasks.select_related('assigned_to').annotate(comment_count=Count('comments'))
     group_activities = group.activities.select_related('user', 'task')[:50]
     total_tasks = tasks.count()
     completed_tasks = tasks.filter(status='COMPLETED').count()
@@ -267,16 +268,19 @@ def task_detail(request, task_id):
         messages.error(request, 'You do not have access to this task.')
         return redirect('core:dashboard')
 
-    can_update_status = _is_group_leader(request.user, group) or task.assigned_to_id == request.user.id
-    can_delete_task = _is_group_leader(request.user, group)
-    can_edit_task = _is_group_leader(request.user, group)
+    is_group_leader = _is_group_leader(request.user, group)
+    can_update_status = is_group_leader or task.assigned_to_id == request.user.id
 
     context = {
         'task': task,
         'task_activities': task.activities.select_related('task')[:20],
+        'comments': task.comments.select_related('author'),
+        'comment_form': TaskCommentForm(),
+        'comment_max_length': TaskComment.BODY_MAX_LENGTH,
+        'is_group_leader': is_group_leader,
         'can_update_status': can_update_status,
-        'can_delete_task': can_delete_task,
-        'can_edit_task': can_edit_task,
+        'can_delete_task': is_group_leader,
+        'can_edit_task': is_group_leader,
         'task_progress_percentage': _get_task_progress_percentage(task),
     }
     return render(request, 'core/task_detail.html', context)
@@ -435,6 +439,104 @@ def update_task_status(request, task_id):
     else:
         messages.success(request, f'Task "{task.title}" updated successfully.')
     return redirect('core:task_detail', task_id=task.id)
+
+
+@login_required
+@require_POST
+def task_comment_create(request, task_id):
+    task = get_object_or_404(Task, id=task_id)
+    group = task.group
+
+    if not _is_group_member(request.user, group):
+        logger.warning(
+            'event=comment_create_denied reason=not_group_member user_id=%s group_id=%s task_id=%s',
+            request.user.id,
+            group.id,
+            task.id,
+        )
+        messages.error(request, 'You do not have access to this task.')
+        return redirect('core:dashboard')
+
+    form = TaskCommentForm(request.POST)
+    if not form.is_valid():
+        logger.warning(
+            'event=comment_create_denied reason=invalid_body user_id=%s group_id=%s task_id=%s',
+            request.user.id,
+            group.id,
+            task.id,
+        )
+        messages.error(request, ' '.join(form.errors['body']))
+        return redirect('core:task_detail', task_id=task.id)
+
+    comment = form.save(commit=False)
+    comment.task = task
+    comment.author = request.user
+    comment.save()
+
+    ActivityLog.objects.create(
+        user=request.user,
+        group=group,
+        task=task,
+        action='COMMENT_ADDED',
+        description=f'{request.user.username} commented on "{task.title}"',
+    )
+    logger.info(
+        'event=comment_added user_id=%s group_id=%s task_id=%s comment_id=%s',
+        request.user.id,
+        group.id,
+        task.id,
+        comment.id,
+    )
+    messages.success(request, 'Comment posted.')
+    return redirect(f"{reverse('core:task_detail', args=[task.id])}#comments")
+
+
+@login_required
+@require_POST
+def task_comment_delete(request, comment_id):
+    comment = get_object_or_404(TaskComment.objects.select_related('task__group'), id=comment_id)
+    task = comment.task
+    group = task.group
+
+    if not _is_group_member(request.user, group):
+        logger.warning(
+            'event=comment_delete_denied reason=not_group_member user_id=%s group_id=%s comment_id=%s',
+            request.user.id,
+            group.id,
+            comment.id,
+        )
+        messages.error(request, 'You do not have access to this task.')
+        return redirect('core:dashboard')
+
+    if not (comment.author_id == request.user.id or _is_group_leader(request.user, group)):
+        logger.warning(
+            'event=comment_delete_denied reason=insufficient_permissions user_id=%s group_id=%s comment_id=%s',
+            request.user.id,
+            group.id,
+            comment.id,
+        )
+        messages.error(request, 'Only the comment author or the group leader can delete this comment.')
+        return redirect('core:task_detail', task_id=task.id)
+
+    comment_id = comment.id
+    whose = 'their' if comment.author_id == request.user.id else f"{comment.author.username}'s"
+    comment.delete()
+    ActivityLog.objects.create(
+        user=request.user,
+        group=group,
+        task=task,
+        action='COMMENT_DELETED',
+        description=f'{request.user.username} deleted {whose} comment on "{task.title}"',
+    )
+    logger.info(
+        'event=comment_deleted user_id=%s group_id=%s task_id=%s comment_id=%s',
+        request.user.id,
+        group.id,
+        task.id,
+        comment_id,
+    )
+    messages.success(request, 'Comment deleted.')
+    return redirect(f"{reverse('core:task_detail', args=[task.id])}#comments")
 
 
 @login_required
