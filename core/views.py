@@ -98,9 +98,9 @@ def dashboard(request):
     user = request.user
     user_groups = Group.objects.filter(members=user)
 
-    assigned_tasks = Task.objects.filter(assigned_to=user).exclude(status='COMPLETED')[:10]
+    assigned_tasks = Task.objects.filter(assigned_to=user).exclude(status='COMPLETED').select_related('group')[:10]
     completed_tasks = Task.objects.filter(assigned_to=user, status='COMPLETED')
-    recent_activities = ActivityLog.objects.filter(user=user)[:10]
+    recent_activities = ActivityLog.objects.filter(user=user).select_related('group', 'task')[:10]
 
     total_assigned = Task.objects.filter(assigned_to=user).count()
     total_completed = completed_tasks.count()
@@ -164,7 +164,7 @@ def group_detail(request, group_id):
         messages.error(request, 'You are not a member of this group.')
         return redirect('core:group_list')
 
-    tasks = group.tasks.all()
+    tasks = group.tasks.select_related('assigned_to')
     group_activities = group.activities.select_related('user', 'task')[:50]
     total_tasks = tasks.count()
     completed_tasks = tasks.filter(status='COMPLETED').count()
@@ -266,7 +266,7 @@ def task_detail(request, task_id):
 
     context = {
         'task': task,
-        'task_activities': task.activities.all()[:20],
+        'task_activities': task.activities.select_related('task')[:20],
         'can_update_status': can_update_status,
         'can_delete_task': can_delete_task,
         'can_edit_task': can_edit_task,
@@ -597,8 +597,8 @@ def join_group(request):
 
 @login_required
 def my_tasks(request):
-    pending_tasks = Task.objects.filter(assigned_to=request.user).exclude(status='COMPLETED')
-    completed_tasks = Task.objects.filter(assigned_to=request.user, status='COMPLETED')
+    pending_tasks = Task.objects.filter(assigned_to=request.user).exclude(status='COMPLETED').select_related('group')
+    completed_tasks = Task.objects.filter(assigned_to=request.user, status='COMPLETED').select_related('group')
 
     context = {
         'pending_tasks': pending_tasks,
@@ -609,5 +609,5 @@ def my_tasks(request):
 
 @login_required
 def activity_log(request):
-    activities = ActivityLog.objects.filter(user=request.user)[:50]
+    activities = ActivityLog.objects.filter(user=request.user).select_related('user', 'group', 'task')[:50]
     return render(request, 'core/activity_log.html', {'activities': activities})

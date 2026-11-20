@@ -1,47 +1,27 @@
 {% extends 'base.html' %}
-{% block title %}Activity Log - TaskTrack{% endblock %}
+{% block title %}Activity{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    {% include 'includes/page_header.html' with eyebrow="Audit Trail" eyebrow_icon="fas fa-history" title="Activity Log" subtitle="Follow important group and task actions in one chronological view." %}
-    <div class="mb-4">
-        <span class="badge bg-info">Transparency & Accountability</span>
+<header class="page-head">
+    <div>
+        <h1 class="page-title">Activity</h1>
+        <p class="page-sub">Your 50 most recent actions across groups and tasks.</p>
     </div>
+</header>
 
-    <div class="card app-card">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">All Activities</h5>
+<section class="panel">
+    {% if activities %}
+        <ul class="item-list">
+            {% for activity in activities %}
+            <li>{% include 'includes/activity_item.html' with show_group=True show_task=True %}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty">
+            <div class="empty-icon"><i class="fas fa-clock-rotate-left"></i></div>
+            <h3>No activity yet</h3>
+            <p>Creating groups, joining them and working on tasks will be recorded here.</p>
         </div>
-        <div class="card-body">
-            {% if activities %}
-                <div class="timeline">
-                    {% for activity in activities %}
-                    <div class="mb-3 pb-3 border-bottom">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <strong class="text-primary">{{ activity.user.username }}</strong>
-                                <span class="text-muted">- {{ activity.get_action_display }}</span>
-                            </div>
-                            <small class="text-muted">{{ activity.timestamp|date:"M d, Y H:i" }}</small>
-                        </div>
-                        <p class="mb-1 mt-2">{{ activity.description }}</p>
-                        {% if activity.group %}
-                        <small class="text-muted">
-                            <i class="fas fa-users"></i> Group: {{ activity.group.name }}
-                        </small>
-                        {% endif %}
-                        {% if activity.task %}
-                        <small class="text-muted ms-3">
-                            <i class="fas fa-tasks"></i> Task: {{ activity.task.title }}
-                        </small>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-muted text-center">No activities recorded yet.</p>
-            {% endif %}
-        </div>
-    </div>
-</div>
+    {% endif %}
+</section>
 {% endblock %}

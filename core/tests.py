@@ -391,6 +391,19 @@ class CoreViewTests(TestCase):
         self.assertIn('Initial Task', pending_titles)
         self.assertIn('Completed Task', completed_titles)
 
+    def test_my_tasks_quick_actions_keep_existing_file_link(self):
+        # update_task_status overwrites file_link with the posted value, so quick actions must resend it.
+        self.task.file_link = 'https://drive.google.com/keep-me'
+        self.task.save()
+        self.client.login(username='member', password='pass12345')
+        response = self.client.get(reverse('core:my_tasks'))
+        self.assertContains(
+            response,
+            '<input type="hidden" name="file_link" value="https://drive.google.com/keep-me">',
+            count=2,
+            html=True,
+        )
+
     def test_join_group_by_code_adds_member_and_logs_activity(self):
         self.client.login(username='outsider', password='pass12345')
         response = self.client.post(
@@ -415,3 +428,5 @@ class CoreViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertFalse(self.group.members.filter(id=self.outsider.id).exists())
+        # Error messages map to Bootstrap's "danger" style and render once (in the toast stack only).
+        self.assertContains(response, 'class="flash flash-danger"', count=1)

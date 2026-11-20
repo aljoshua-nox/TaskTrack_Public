@@ -1,132 +1,97 @@
 {% extends 'base.html' %}
-{% block title %}My Tasks - TaskTrack{% endblock %}
+{% block title %}My Tasks{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    {% include 'includes/page_header.html' with eyebrow="Work Queue" eyebrow_icon="fas fa-list-check" title="My Tasks" subtitle="Track what is pending, what is done, and what needs attention next." %}
-    <div class="d-flex flex-wrap gap-2 mb-4">
-        <a href="?get_suggestions=1" class="btn btn-info">
-            <i class="fas fa-robot"></i> Get AI Suggestions
-        </a>
-        <a href="{% url 'core:activity_log' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-history"></i> View Activity Log
-        </a>
+<header class="page-head">
+    <div>
+        <h1 class="page-title">My Tasks</h1>
+        <p class="page-sub">Everything assigned to you across your groups.</p>
     </div>
+</header>
 
-    {% if suggestions %}
-    <div class="alert alert-info shadow mb-4">
-        <h5><i class="fas fa-lightbulb"></i> Task Suggestions</h5>
-        <hr>
-        {% for suggestion in suggestions %}
-        <div class="mb-2">
-            <strong>{{ suggestion.group }}:</strong> {{ suggestion.message }}
-            <span class="badge bg-{% if suggestion.priority == 'High' %}danger{% else %}warning{% endif %} ms-2">
-                {{ suggestion.priority }} Priority
-            </span>
-        </div>
-        {% endfor %}
-        <small class="text-muted">Note: These are rule-based suggestions to help you stay organized.</small>
+<section class="panel">
+    <div class="panel-head">
+        <h2 class="panel-title">Open <span class="count">{{ pending_tasks|length }}</span></h2>
     </div>
+    {% if pending_tasks %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th class="text-end">Quick actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in pending_tasks %}
+                    <tr class="{% if task.is_overdue %}is-late{% endif %}">
+                        <td>
+                            <a class="row-link" href="{% url 'core:task_detail' task.id %}">{{ task.title }}</a>
+                            <div class="small text-muted">{{ task.group.name }}</div>
+                        </td>
+                        <td class="text-nowrap {% if task.is_overdue %}text-danger fw-semibold{% endif %}">{{ task.deadline|date:"M d, Y" }}</td>
+                        <td>{% include 'includes/status_pill.html' %}</td>
+                        <td class="text-end text-nowrap">
+                            <form method="post" action="{% url 'core:update_task_status' task.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="IN_PROGRESS">
+                                <input type="hidden" name="file_link" value="{{ task.file_link }}">
+                                <button type="submit" class="btn btn-sm btn-progress-soft" {% if task.status == 'IN_PROGRESS' %}disabled{% endif %}>
+                                    <i class="fas fa-play"></i> Start
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'core:update_task_status' task.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="status" value="COMPLETED">
+                                <input type="hidden" name="file_link" value="{{ task.file_link }}">
+                                <button type="submit" class="btn btn-sm btn-success-soft">
+                                    <i class="fas fa-check"></i> Complete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty">
+            <div class="empty-icon"><i class="fas fa-mug-hot"></i></div>
+            <h3>Nothing open</h3>
+            <p>You're on top of your work. New assignments will show up here.</p>
+        </div>
     {% endif %}
+</section>
 
-    <div class="card mb-4 app-card">
-        <div class="card-header bg-warning">
-            <h5 class="mb-0"><i class="fas fa-clock"></i> Pending Tasks ({{ pending_tasks.count }})</h5>
-        </div>
-        <div class="card-body">
-            {% if pending_tasks %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Task</th>
-                                <th>Group</th>
-                                <th>Deadline</th>
-                                <th>Status</th>
-                                <th>Quick Actions</th>
-                                <th>Details</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for task in pending_tasks %}
-                            <tr class="{% if task.is_overdue %}table-danger{% endif %}">
-                                <td>{{ task.title }}</td>
-                                <td>{{ task.group.name }}</td>
-                                <td>
-                                    {{ task.deadline|date:"M d, Y" }}
-                                    {% if task.is_overdue %}
-                                        <span class="badge bg-danger">OVERDUE</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="status-badge status-{{ task.status }}">
-                                        {{ task.get_status_display }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <form method="post" action="{% url 'core:update_task_status' task.id %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="status" value="IN_PROGRESS">
-                                        <button type="submit" class="btn btn-sm btn-info" {% if task.status == 'IN_PROGRESS' %}disabled{% endif %}>
-                                            Start
-                                        </button>
-                                    </form>
-                                    <form method="post" action="{% url 'core:update_task_status' task.id %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="status" value="COMPLETED">
-                                        <button type="submit" class="btn btn-sm btn-success" {% if task.status == 'COMPLETED' %}disabled{% endif %}>
-                                            Complete
-                                        </button>
-                                    </form>
-                                </td>
-                                <td>
-                                    <a href="{% url 'core:task_detail' task.id %}" class="btn btn-sm btn-primary">View</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p class="text-muted text-center">No pending tasks. Great job staying on top of your work!</p>
-            {% endif %}
-        </div>
+<section class="panel">
+    <div class="panel-head">
+        <h2 class="panel-title">Completed <span class="count">{{ completed_tasks|length }}</span></h2>
     </div>
-
-    <div class="card app-card">
-        <div class="card-header bg-success text-white">
-            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Completed Tasks ({{ completed_tasks.count }})</h5>
+    {% if completed_tasks %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Group</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in completed_tasks %}
+                    <tr>
+                        <td><a class="row-link" href="{% url 'core:task_detail' task.id %}">{{ task.title }}</a></td>
+                        <td class="text-muted">{{ task.group.name }}</td>
+                        <td class="text-muted text-nowrap">{{ task.completed_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        <div class="card-body">
-            {% if completed_tasks %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Task</th>
-                                <th>Group</th>
-                                <th>Completed</th>
-                                <th>View</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for task in completed_tasks %}
-                            <tr>
-                                <td>{{ task.title }}</td>
-                                <td>{{ task.group.name }}</td>
-                                <td>{{ task.completed_at|date:"M d, Y" }}</td>
-                                <td>
-                                    <a href="{% url 'core:task_detail' task.id %}" class="btn btn-sm btn-info">View</a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <p class="text-muted text-center">No completed tasks yet. Start by completing some tasks!</p>
-            {% endif %}
-        </div>
-    </div>
-</div>
+    {% else %}
+        <div class="empty"><p>Completed tasks will be listed here.</p></div>
+    {% endif %}
+</section>
 {% endblock %}

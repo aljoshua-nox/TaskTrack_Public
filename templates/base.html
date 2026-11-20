@@ -1,254 +1,133 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskTrack - {% block title %}Group Project Management{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        :root {
-            --tt-bg: #f4f8fc;
-            --tt-surface: rgba(255, 255, 255, 0.9);
-            --tt-surface-strong: #ffffff;
-            --tt-border: rgba(15, 23, 42, 0.08);
-            --tt-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
-            --tt-shadow-soft: 0 10px 24px rgba(15, 23, 42, 0.06);
-            --tt-primary: #2563eb;
-            --tt-primary-soft: #e8f0ff;
-            --tt-accent: #14b8a6;
-        }
-
-        body.app-authenticated {
-            min-height: 100vh;
-            background:
-                radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 28%),
-                radial-gradient(circle at top right, rgba(20, 184, 166, 0.08), transparent 24%),
-                linear-gradient(180deg, #fbfdff 0%, var(--tt-bg) 100%);
-            color: #1f2937;
-        }
-
-        .navbar-brand {
-            font-weight: bold;
-            font-size: 1.5rem;
-        }
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.96));
-            border-right: 1px solid var(--tt-border);
-        }
-        .main-content {
-            padding: 28px;
-        }
-        .task-card {
-            transition: transform 0.2s;
-            margin-bottom: 15px;
-        }
-        .task-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
-        .status-PENDING { background-color: #ffc107; color: #000; }
-        .status-IN_PROGRESS { background-color: #17a2b8; color: #fff; }
-        .status-COMPLETED { background-color: #28a745; color: #fff; }
-        .status-OVERDUE { background-color: #dc3545; color: #fff; }
-        .contribution-bar {
-            height: 8px;
-            background-color: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .contribution-fill {
-            height: 100%;
-            background-color: #28a745;
-            transition: width 0.3s;
-        }
-        .page-header {
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(20, 184, 166, 0.08));
-            border: 1px solid var(--tt-border);
-            border-radius: 24px;
-            box-shadow: var(--tt-shadow-soft);
-        }
-        .page-header__eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.35rem 0.75rem;
-            border-radius: 999px;
-            background: rgba(37, 99, 235, 0.1);
-            color: var(--tt-primary);
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-        }
-        .page-header__title {
-            margin: 0.65rem 0 0.35rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-        }
-        .page-header__subtitle {
-            margin-bottom: 0;
-            color: #5b6472;
-        }
-        .app-card {
-            border: 1px solid var(--tt-border);
-            border-radius: 22px;
-            box-shadow: var(--tt-shadow-soft);
-            overflow: hidden;
-            background: var(--tt-surface-strong);
-        }
-        .app-card .card-header {
-            border-bottom: 1px solid var(--tt-border);
-            padding: 1rem 1.25rem;
-        }
-        .app-card .card-body {
-            padding: 1.25rem;
-        }
-        .table {
-            margin-bottom: 0;
-        }
-        .table thead th {
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #64748b;
-            border-top: 0;
-        }
-        .list-group-item {
-            border-color: var(--tt-border);
-        }
-        .alert-dismissible {
-            position: fixed;
-            top: 70px;
-            right: 20px;
-            z-index: 1050;
-            min-width: 300px;
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        @media (max-width: 767.98px) {
-            .main-content {
-                padding: 18px;
-            }
-            .page-header {
-                border-radius: 20px;
-            }
-        }
-    </style>
+    <title>{% block title %}Group Project Management{% endblock %} · TaskTrack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/tasktrack.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="{% if user.is_authenticated %}app-authenticated{% endif %}">
-    {% if user.is_authenticated %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'core:dashboard' %}">
-                <i class="fas fa-tasks"></i> TaskTrack
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'core:dashboard' %}">
-                            <i class="fas fa-chart-line"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'core:group_list' %}">
-                            <i class="fas fa-users"></i> Groups
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'core:my_tasks' %}">
-                            <i class="fas fa-list-check"></i> My Tasks
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'core:activity_log' %}">
-                            <i class="fas fa-history"></i> Activity Log
-                        </a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ user.username }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#">
-                                <i class="fas fa-user-circle"></i> Profile
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    {% endif %}
-
+<body>
     {% if messages %}
+    <div class="toast-stack" aria-live="polite">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="flash flash-{{ message.level_tag }}" role="{% if message.level_tag == 'danger' %}alert{% else %}status{% endif %}">
+            <i class="flash-icon fas {% if message.level_tag == 'success' %}fa-circle-check{% elif message.level_tag == 'danger' %}fa-circle-exclamation{% elif message.level_tag == 'warning' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+            <div class="flash-text">{{ message }}</div>
+            <button type="button" class="btn-close" aria-label="Dismiss"></button>
         </div>
         {% endfor %}
+    </div>
     {% endif %}
 
-    <div class="container-fluid">
-        <div class="row">
-            {% if user.is_authenticated %}
-            <div class="col-md-2 sidebar d-none d-md-block p-3">
-                <div class="text-center mb-4">
-                    <i class="fas fa-tasks fa-3x text-primary"></i>
-                    <h5 class="mt-2">TaskTrack</h5>
-                    <small class="text-muted">Project Management</small>
-                </div>
-                <hr>
-                <div class="d-grid gap-2">
-                    <a href="{% url 'core:group_create' %}" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus"></i> Create Group
+    {% block layout %}
+    {% with current=request.resolver_match.url_name %}
+    <div class="app-shell">
+        <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar" aria-label="Main navigation">
+            <div class="sidebar-inner">
+                <div class="d-flex align-items-center justify-content-between">
+                    <a class="brand" href="{% url 'core:dashboard' %}">
+                        <span class="brand-mark"><i class="fas fa-check"></i></span> TaskTrack
                     </a>
-                    <a href="{% url 'core:join_group' %}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-sign-in-alt"></i> Join Group
+                    <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close menu"></button>
+                </div>
+
+                <nav class="side-nav">
+                    <a class="side-link {% if current == 'dashboard' %}active{% endif %}" href="{% url 'core:dashboard' %}">
+                        <i class="fas fa-house"></i><span>Dashboard</span>
+                    </a>
+                    <a class="side-link {% if current == 'group_list' %}active{% endif %}" href="{% url 'core:group_list' %}">
+                        <i class="fas fa-users"></i><span>Groups</span>
+                    </a>
+                    <a class="side-link {% if current == 'my_tasks' %}active{% endif %}" href="{% url 'core:my_tasks' %}">
+                        <i class="fas fa-list-check"></i><span>My Tasks</span>
+                    </a>
+                    <a class="side-link {% if current == 'activity_log' %}active{% endif %}" href="{% url 'core:activity_log' %}">
+                        <i class="fas fa-clock-rotate-left"></i><span>Activity</span>
+                    </a>
+                </nav>
+
+                <div>
+                    <div class="nav-section-label">Your groups</div>
+                    <nav class="side-nav">
+                        {% for g in sidebar_groups %}
+                        <a class="side-link {% if group and g.id == group.id or task and g.id == task.group_id %}active{% endif %}" href="{% url 'core:group_detail' g.id %}">
+                            <span class="group-dot"></span><span>{{ g.name }}</span>
+                        </a>
+                        {% empty %}
+                        <p class="small text-muted px-2 mb-0">No groups yet.</p>
+                        {% endfor %}
+                    </nav>
+                </div>
+
+                <div class="sidebar-actions">
+                    <a href="{% url 'core:group_create' %}" class="btn btn-sm btn-primary {% if current == 'group_create' %}active{% endif %}">
+                        <i class="fas fa-plus"></i> New
+                    </a>
+                    <a href="{% url 'core:join_group' %}" class="btn btn-sm btn-light {% if current == 'join_group' %}active{% endif %}">
+                        <i class="fas fa-key"></i> Join
                     </a>
                 </div>
-                <hr>
-                <div class="small text-muted mt-3">
-                    <i class="fas fa-info-circle"></i> Focus: Accountability & Transparency
+
+                <div class="user-chip">
+                    <span class="avatar">{{ user.username|first }}</span>
+                    <div class="name">{{ user.username }}</div>
+                    <a class="icon-btn" href="{% url 'accounts:logout' %}" title="Log out" aria-label="Log out">
+                        <i class="fas fa-arrow-right-from-bracket"></i>
+                    </a>
                 </div>
             </div>
-            <div class="col-md-10 main-content">
-            {% else %}
-            <div class="col-12">
-            {% endif %}
+        </aside>
+
+        <div class="main">
+            <div class="mobile-topbar d-lg-none">
+                <button class="icon-btn ms-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Open menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a class="brand" href="{% url 'core:dashboard' %}">
+                    <span class="brand-mark"><i class="fas fa-check"></i></span> TaskTrack
+                </a>
+            </div>
+            <main class="main-inner {% block main_class %}{% endblock %}">
                 {% block content %}{% endblock %}
-            </div>
+            </main>
         </div>
     </div>
+    {% endwith %}
+    {% endblock layout %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function () {
+            function dismiss(flash) {
+                flash.classList.add('is-leaving');
+                setTimeout(function () { flash.remove(); }, 200);
+            }
+            document.querySelectorAll('.flash').forEach(function (flash) {
+                flash.querySelector('.btn-close').addEventListener('click', function () { dismiss(flash); });
+                var delay = flash.classList.contains('flash-danger') ? 9000 : 5000;
+                setTimeout(function () { dismiss(flash); }, delay);
+            });
+
+            document.querySelectorAll('[data-copy]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var label = button.querySelector('[data-copy-label]');
+                    var original = label ? label.textContent : '';
+                    navigator.clipboard.writeText(button.getAttribute('data-copy')).then(function () {
+                        if (label) {
+                            label.textContent = 'Copied';
+                            setTimeout(function () { label.textContent = original; }, 1500);
+                        }
+                    });
+                });
+            });
+        })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

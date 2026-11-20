@@ -1,36 +1,26 @@
 {% extends 'base.html' %}
-{% block title %}{{ title }} - TaskTrack{% endblock %}
+{% block title %}{{ title }}{% endblock %}
+{% block main_class %}narrow{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            {% include 'includes/page_header.html' with eyebrow="Group Setup" eyebrow_icon="fas fa-folder-plus" title=title subtitle="Create a new group workspace for your project team." %}
-            <div class="card app-card">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">{{ title }}</h4>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        {% for field in form %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            {{ field.errors }}
-                            {{ field }}
-                            {% if field.help_text %}
-                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Save Group</button>
-                            <a href="{% url 'core:group_list' %}" class="btn btn-secondary">Cancel</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+<header class="page-head">
+    <div>
+        <div class="crumbs"><a href="{% url 'core:group_list' %}">Groups</a><span class="sep">/</span><span>New</span></div>
+        <h1 class="page-title">{{ title }}</h1>
+        <p class="page-sub">You'll be the group leader. Share the join code with your team after it's created.</p>
     </div>
-</div>
+</header>
+
+<section class="panel">
+    <div class="panel-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% include 'includes/form_fields.html' %}
+            <div class="form-actions">
+                <a href="{% url 'core:group_list' %}" class="btn btn-light">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create group</button>
+            </div>
+        </form>
+    </div>
+</section>
 {% endblock %}

@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
+from django.contrib.messages import constants as message_constants
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -117,6 +118,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "core.context_processors.sidebar_groups",
             ],
         },
     },
@@ -210,6 +212,9 @@ LOGGING = {
         'core': {'handlers': ['console'], 'level': DJANGO_LOG_LEVEL, 'propagate': False},
     },
 }
+
+# Bootstrap has no "error" alert style; map Django's error level to "danger".
+MESSAGE_TAGS = {message_constants.ERROR: 'danger'}
 
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
