@@ -99,8 +99,13 @@ class Task(models.Model):
         self.save()
 
     def save(self, *args, **kwargs):
-        if self.status != 'COMPLETED' and self.deadline < timezone.now():
+        # OVERDUE means "not started and past the deadline". In-progress work keeps its
+        # status when late (is_overdue() still flags it), and an extended deadline clears it.
+        is_late = self.deadline < timezone.now()
+        if self.status == 'PENDING' and is_late:
             self.status = 'OVERDUE'
+        elif self.status == 'OVERDUE' and not is_late:
+            self.status = 'PENDING'
         super().save(*args, **kwargs)
 
 

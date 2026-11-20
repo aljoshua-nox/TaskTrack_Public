@@ -65,6 +65,11 @@ def _build_member_contributions(group):
     }
 
 
+def _tasks_assigned_in_my_groups(user):
+    # Removed members keep their old assignments; hide those since they can no longer open them.
+    return Task.objects.filter(assigned_to=user, group__members=user)
+
+
 def _get_task_progress_percentage(task):
     if task.status == 'COMPLETED':
         return 100
@@ -82,7 +87,8 @@ def _describe_task_changes(old_values, task):
         change_messages.append('description')
     if old_values['assigned_to'] != task.assigned_to.username:
         change_messages.append(f'assignee from "{old_values["assigned_to"]}" to "{task.assigned_to.username}"')
-    if old_values['deadline'] != task.deadline:
+    # The form works in whole minutes, so ignore second-level differences.
+    if old_values['deadline'].replace(second=0, microsecond=0) != task.deadline.replace(second=0, microsecond=0):
         change_messages.append(
             f'deadline from {old_values["deadline"].strftime("%Y-%m-%d %H:%M")} '
             f'to {task.deadline.strftime("%Y-%m-%d %H:%M")}'
@@ -98,11 +104,12 @@ def dashboard(request):
     user = request.user
     user_groups = Group.objects.filter(members=user)
 
-    assigned_tasks = Task.objects.filter(assigned_to=user).exclude(status='COMPLETED').select_related('group')[:10]
-    completed_tasks = Task.objects.filter(assigned_to=user, status='COMPLETED')
+    my_tasks_qs = _tasks_assigned_in_my_groups(user)
+    assigned_tasks = my_tasks_qs.exclude(status='COMPLETED').select_related('group')[:10]
+    completed_tasks = my_tasks_qs.filter(status='COMPLETED')
     recent_activities = ActivityLog.objects.filter(user=user).select_related('group', 'task')[:10]
 
-    total_assigned = Task.objects.filter(assigned_to=user).count()
+    total_assigned = my_tasks_qs.count()
     total_completed = completed_tasks.count()
     completion_rate = (total_completed / total_assigned * 100) if total_assigned > 0 else 0
 
@@ -392,12 +399,14 @@ def update_task_status(request, task_id):
         task.completed_at = None
 
     task.save()
+    # Task.save may adjust the status (a late PENDING task becomes OVERDUE), so report what was stored.
+    saved_status = task.status
 
     status_map = dict(Task.STATUS_CHOICES)
     # Keep rollback context in the activity trail so completed-task reversals stay auditable.
     description = (
         f'{request.user.username} changed "{task.title}" from '
-        f'{status_map.get(old_status, old_status)} to {status_map.get(new_status, new_status)}'
+        f'{status_map.get(old_status, old_status)} to {status_map.get(saved_status, saved_status)}'
     )
     if rollback_comment:
         description += f'. Reason: {rollback_comment}'
@@ -415,9 +424,16 @@ def update_task_status(request, task_id):
         group.id,
         task.id,
         old_status,
-        new_status,
+        saved_status,
     )
-    messages.success(request, f'Task "{task.title}" updated successfully.')
+    if saved_status != new_status:
+        messages.warning(
+            request,
+            f'Task "{task.title}" is past its deadline, so it stays Overdue until it is started, '
+            'completed, or given a new deadline.',
+        )
+    else:
+        messages.success(request, f'Task "{task.title}" updated successfully.')
     return redirect('core:task_detail', task_id=task.id)
 
 
@@ -533,6 +549,7 @@ def remove_group_member(request, group_id, user_id):
         messages.error(request, 'Selected user is not a member of this group.')
         return redirect('core:group_detail', group_id=group.id)
 
+    open_task_count = group.tasks.filter(assigned_to=member).exclude(status='COMPLETED').count()
     group.members.remove(member)
     ActivityLog.objects.create(
         user=request.user,
@@ -546,7 +563,13 @@ def remove_group_member(request, group_id, user_id):
         group.id,
         member.id,
     )
-    messages.success(request, f'{member.username} was removed from the group.')
+    removal_message = f'{member.username} was removed from the group.'
+    if open_task_count:
+        removal_message += (
+            f' {open_task_count} open task{"s" if open_task_count != 1 else ""} '
+            'still assigned to them should be reassigned.'
+        )
+    messages.success(request, removal_message)
     return redirect('core:group_detail', group_id=group.id)
 
 
@@ -597,8 +620,9 @@ def join_group(request):
 
 @login_required
 def my_tasks(request):
-    pending_tasks = Task.objects.filter(assigned_to=request.user).exclude(status='COMPLETED').select_related('group')
-    completed_tasks = Task.objects.filter(assigned_to=request.user, status='COMPLETED').select_related('group')
+    my_tasks_qs = _tasks_assigned_in_my_groups(request.user).select_related('group')
+    pending_tasks = my_tasks_qs.exclude(status='COMPLETED')
+    completed_tasks = my_tasks_qs.filter(status='COMPLETED')
 
     context = {
         'pending_tasks': pending_tasks,

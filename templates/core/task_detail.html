@@ -92,6 +92,9 @@
                                 <input type="radio" name="status" id="status-done" value="COMPLETED" {% if task.status == 'COMPLETED' %}checked{% endif %}>
                                 <label for="status-done"><i class="fas fa-circle-check"></i> Completed</label>
                             </div>
+                            {% if task.is_overdue %}
+                            <div class="form-text text-danger">This task is past its deadline. Pending tasks show as Overdue until they're started or given a new deadline.</div>
+                            {% endif %}
                         </div>
                         <div class="field">
                             <label for="file_link" class="form-label">Output link <span class="text-muted fw-normal">(optional)</span></label>

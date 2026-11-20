@@ -41,7 +41,10 @@ class TaskForm(forms.ModelForm):
 
     def clean_deadline(self):
         deadline = self.cleaned_data['deadline']
-        if deadline < timezone.now():
+        # Editing an overdue task must not force a new deadline; only a newly chosen past date is invalid.
+        current = self.instance.deadline if self.instance.pk else None
+        unchanged = current is not None and deadline == current.replace(second=0, microsecond=0)
+        if deadline < timezone.now() and not unchanged:
             raise forms.ValidationError('Deadline cannot be in the past.')
         return deadline
 
